@@ -1,0 +1,7 @@
+{
+  "name": "Arena Clash",
+  "description": "Arena Clash (آرنا کلش) - اپلیکیشن و بازی آنلاین چالش، نبرد آرنا، جوایز و اشتراک VIP برای کافه بازار",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:pivotX="54"
+        android:pivotY="54">
+        <!-- Shield Background Glow -->
+        <path
+            android:pathData="M54,26 L72,32 C72,56 54,76 54,76 C54,76 36,56 36,32 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:startX="54"
+                    android:startY="26"
+                    android:endX="54"
+                    android:endY="76"
+                    android:type="linear">
+                    <item android:offset="0.0" android:color="#FFF59E0B" />
+                    <item android:offset="1.0" android:color="#FFB45309" />
+                </gradient>
+            </aapt:attr>
+        </path>
+
+        <!-- Inner Shield Contour -->
+        <path
+            android:fillColor="#FF1E293B"
+            android:pathData="M54,30 L68,35 C68,54 54,71 54,71 C54,71 40,54 40,35 Z" />
+
+        <!-- Shield Accent Trim -->
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFDE047"
+            android:strokeWidth="1.5"
+            android:pathData="M54,28 L70,33.5 C70,55 54,73.5 54,73.5 C54,73.5 38,55 38,33.5 Z" />
+
+        <!-- Left Crossed Sword Blade & Hilt -->
+        <path
+            android:fillColor="#FFF1F5F9"
+            android:pathData="M32,70 L70,32 L74,36 L36,74 Z" />
+        <path
+            android:fillColor="#FFE2E8F0"
+            android:pathData="M70,32 L76,30 L74,36 Z" />
+        <path
+            android:fillColor="#FFF59E0B"
+            android:pathData="M30,68 L36,74 L33,77 L27,71 Z" />
+
+        <!-- Right Crossed Sword Blade & Hilt -->
+        <path
+            android:fillColor="#FFE2E8F0"
+            android:pathData="M76,70 L38,32 L34,36 L72,74 Z" />
+        <path
+            android:fillColor="#FFF1F5F9"
+            android:pathData="M38,32 L32,30 L34,36 Z" />
+        <path
+            android:fillColor="#FFF59E0B"
+            android:pathData="M78,68 L72,74 L75,77 L81,71 Z" />
+
+        <!-- Central Lightning Clash Symbol -->
+        <path
+            android:pathData="M56,36 L46,50 L53,50 L50,64 L62,48 L55,48 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:startX="54"
+                    android:startY="36"
+                    android:endX="54"
+                    android:endY="64"
+                    android:type="linear">
+                    <item android:offset="0.0" android:color="#FFFFFBEB" />
+                    <item android:offset="0.5" android:color="#FFFBBF24" />
+                    <item android:offset="1.0" android:color="#FFF59E0B" />
+                </gradient>
+            </aapt:attr>
+        </path>
+    </group>
+</vector>
