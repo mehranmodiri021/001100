@@ -18,7 +18,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.aistudio.arenaclash.bazaar"
+        applicationId = "com.aistudio.challengearena.vxpqz"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
