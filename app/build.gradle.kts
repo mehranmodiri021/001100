@@ -1,4 +1,5 @@
-import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+import com.android.build.api.dsl.ApplicationExtension
+import org.gradle.api.GradleException
 
 plugins {
     alias(libs.plugins.android.application)
@@ -29,25 +30,36 @@ android {
 
     signingConfigs {
         create("release") {
-            val keystoreEnv = System.getenv("KEYSTORE_PATH")
+            val keystorePath = System.getenv("KEYSTORE_PATH")
+            val storePasswordEnv = System.getenv("STORE_PASSWORD")
+            val keyAliasEnv = System.getenv("KEY_ALIAS")
+            val keyPasswordEnv = System.getenv("KEY_PASSWORD")
 
-            val store = when {
-                !keystoreEnv.isNullOrBlank() && file(keystoreEnv).exists() ->
-                    file(keystoreEnv)
-
-                file("${rootDir}/my-upload-key.jks").exists() ->
-                    file("${rootDir}/my-upload-key.jks")
-
-                else ->
-                    null
+            if (
+                keystorePath.isNullOrBlank() ||
+                storePasswordEnv.isNullOrBlank() ||
+                keyAliasEnv.isNullOrBlank() ||
+                keyPasswordEnv.isNullOrBlank()
+            ) {
+                throw GradleException(
+                    "Release signing configuration is incomplete. " +
+                        "KEYSTORE_PATH, STORE_PASSWORD, KEY_ALIAS and KEY_PASSWORD " +
+                        "must be provided."
+                )
             }
 
-            if (store != null) {
-                storeFile = store
-                storePassword = System.getenv("STORE_PASSWORD") ?: ""
-                keyAlias = System.getenv("KEY_ALIAS") ?: ""
-                keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+            val keystoreFile = file(keystorePath)
+
+            if (!keystoreFile.exists()) {
+                throw GradleException(
+                    "Release keystore not found: ${keystoreFile.absolutePath}"
+                )
             }
+
+            storeFile = keystoreFile
+            storePassword = storePasswordEnv
+            keyAlias = keyAliasEnv
+            keyPassword = keyPasswordEnv
         }
 
         create("debugConfig") {
@@ -68,13 +80,7 @@ android {
                 "proguard-rules.pro"
             )
 
-            val releaseConfig = signingConfigs.getByName("release")
-
-            if (releaseConfig.storeFile != null && releaseConfig.storeFile?.exists() == true) {
-                signingConfig = releaseConfig
-            } else {
-                signingConfig = signingConfigs.getByName("debugConfig")
-            }
+            signingConfig = signingConfigs.getByName("release")
         }
 
         debug {
@@ -114,23 +120,26 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
 
     implementation(libs.androidx.activity.compose)
+
     implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
+
     implementation(libs.androidx.core.ktx)
+
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+
+    implementation(libs.androidx.navigation.compose)
 
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
 
     implementation("ir.tapsell.plus:tapsell-plus-sdk-android:2.3.3")
-
-    implementation(libs.androidx.navigation.compose)
 
     testImplementation(libs.androidx.compose.ui.test.junit4)
     testImplementation(libs.androidx.core)
@@ -144,13 +153,4 @@ dependencies {
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.runner)
-
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-
-    ksp(libs.androidx.room.compiler)
-    ksp(libs.moshi.kotlin.codegen)
-}
+    androidTestImplementation(libs.androidx.espresso.core
