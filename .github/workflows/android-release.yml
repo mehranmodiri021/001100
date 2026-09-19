@@ -1,156 +1,78 @@
-import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+name: Android Release Build & CI
 
-plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.google.devtools.ksp)
-    alias(libs.plugins.roborazzi)
-    alias(libs.plugins.secrets)
-}
+on:
+  push:
+    branches:
+      - "main"
+  workflow_dispatch:
 
-android {
-    namespace = "com.example"
+jobs:
+  build:
+    name: Build Release APK & Bundle (AAB)
+    runs-on: ubuntu-latest
 
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    defaultConfig {
-        applicationId = "com.aistudio.arenaclash.bazaar"
-        minSdk = 24
-        targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
+      - name: Grant Execute Permission for Gradle
+        run: chmod +x gradlew
 
-    signingConfigs {
-        create("release") {
-            val keystoreEnv = System.getenv("KEYSTORE_PATH")
+      - name: Create temporary debug keystore
+        run: |
+          keytool -genkeypair \
+            -v \
+            -keystore debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
 
-            val store = when {
-                !keystoreEnv.isNullOrBlank() && file(keystoreEnv).exists() ->
-                    file(keystoreEnv)
+      - name: Verify Gradle Configuration
+        run: |
+          test -f gradlew
+          test -f debug.keystore
+          echo "Gradle wrapper: OK"
+          echo "Temporary debug keystore: OK"
 
-                file("${rootDir}/my-upload-key.jks").exists() ->
-                    file("${rootDir}/my-upload-key.jks")
+      - name: Assemble Release APK
+        env:
+          BAZAAR_PUBLIC_KEY: ${{ secrets.BAZAAR_PUBLIC_KEY }}
+          TAPSELL_KEY: ${{ secrets.TAPSELL_KEY }}
+        run: ./gradlew :app:assembleRelease --stacktrace
 
-                else ->
-                    null
-            }
+      - name: Bundle Release AAB
+        env:
+          BAZAAR_PUBLIC_KEY: ${{ secrets.BAZAAR_PUBLIC_KEY }}
+          TAPSELL_KEY: ${{ secrets.TAPSELL_KEY }}
+        run: ./gradlew :app:bundleRelease --stacktrace
 
-            if (store != null) {
-                storeFile = store
-                storePassword = System.getenv("STORE_PASSWORD") ?: ""
-                keyAlias = System.getenv("KEY_ALIAS") ?: ""
-                keyPassword = System.getenv("KEY_PASSWORD") ?: ""
-            }
-        }
+      - name: Verify Release Artifacts
+        run: |
+          test -n "$(find app/build/outputs/apk/release -maxdepth 1 -name '*.apk' -print -quit)"
+          test -n "$(find app/build/outputs/bundle/release -maxdepth 1 -name '*.aab' -print -quit)"
+          echo "Release APK and AAB were generated successfully."
 
-        create("debugConfig") {
-            storeFile = file("${rootDir}/debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
-        }
-    }
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: arena-clash-release-apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
 
-    buildTypes {
-        release {
-            isCrunchPngs = false
-            isMinifyEnabled = false
-
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-
-            val releaseConfig = signingConfigs.getByName("release")
-
-            if (releaseConfig.storeFile != null && releaseConfig.storeFile?.exists() == true) {
-                signingConfig = releaseConfig
-            } else {
-                signingConfig = signingConfigs.getByName("debugConfig")
-            }
-        }
-
-        debug {
-            signingConfig = signingConfigs.getByName("debugConfig")
-        }
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    buildFeatures {
-        compose = true
-        buildConfig = true
-    }
-
-    testOptions {
-        unitTests {
-            isIncludeAndroidResources = true
-        }
-    }
-
-    dependenciesInfo {
-        includeInApk = false
-        includeInBundle = true
-    }
-}
-
-secrets {
-    propertiesFileName = ".env"
-    defaultPropertiesFileName = ".env.example"
-    ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
-}
-
-dependencies {
-    implementation(platform(libs.androidx.compose.bom))
-
-    implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.compose.material.icons.core)
-    implementation(libs.androidx.compose.material.icons.extended)
-    implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.compose)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-
-    implementation(libs.androidx.room.ktx)
-    implementation(libs.androidx.room.runtime)
-
-    implementation("ir.tapsell.plus:tapsell-plus-sdk-android:2.3.3")
-
-    implementation(libs.androidx.navigation.compose)
-
-    testImplementation(libs.androidx.compose.ui.test.junit4)
-    testImplementation(libs.androidx.core)
-    testImplementation(libs.androidx.junit)
-    testImplementation(libs.junit)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.robolectric)
-    testImplementation(libs.roborazzi)
-    testImplementation(libs.roborazzi.compose)
-    testImplementation(libs.roborazzi.junit.rule)
-
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.runner)
-
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-
-    ksp(libs.androidx.room.compiler)
-    ksp(libs.moshi.kotlin.codegen)
-}
+      - name: Upload Release Bundle (AAB)
+        uses: actions/upload-artifact@v4
+        with:
+          name: arena-clash-release-aab
+          path: app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
