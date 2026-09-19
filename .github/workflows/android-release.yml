@@ -1,15 +1,13 @@
-name: Android Release Build
+name: Android Release Build & CI
 
 on:
   push:
-    branches: [ main, master ]
-    tags:
-      - 'v*'
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build Release APK & Bundle
+    name: Build Release APK & Bundle (AAB)
     runs-on: ubuntu-latest
 
     steps:
@@ -23,29 +21,29 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      - name: Grant Execute Permission for Gradlew
-        run: chmod +x gradlew
+      - name: Grant Execute Permission for Gradle
+        run: chmod +x gradlew || true
 
-      - name: Build Release APK and AAB Bundle
+      - name: Assemble Release APK
         env:
-          KEYSTORE_PATH: ${{ secrets.KEYSTORE_PATH }}
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           BAZAAR_PUBLIC_KEY: ${{ secrets.BAZAAR_PUBLIC_KEY }}
           TAPSELL_KEY: ${{ secrets.TAPSELL_KEY }}
-        run: ./gradlew assembleRelease bundleRelease --stacktrace
+        run: gradle :app:assembleRelease --stacktrace
+
+      - name: Bundle Release AAB
+        env:
+          BAZAAR_PUBLIC_KEY: ${{ secrets.BAZAAR_PUBLIC_KEY }}
+          TAPSELL_KEY: ${{ secrets.TAPSELL_KEY }}
+        run: gradle :app:bundleRelease --stacktrace
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
           name: arena-clash-release-apk
           path: app/build/outputs/apk/release/*.apk
-          if-no-files-found: warn
 
-      - name: Upload Release AAB (Android App Bundle for Cafe Bazaar)
+      - name: Upload Release Bundle (AAB)
         uses: actions/upload-artifact@v4
         with:
-          name: arena-clash-release-bundle
+          name: arena-clash-release-aab
           path: app/build/outputs/bundle/release/*.aab
-          if-no-files-found: warn

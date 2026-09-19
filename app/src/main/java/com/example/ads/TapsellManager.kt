@@ -18,11 +18,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.atomic.AtomicBoolean
 
 sealed class AdState {
-    object Idle : AdState()
-    object Initializing : AdState()
-    object Ready : AdState()
-    object LoadingAd : AdState()
-    object ShowingAd : AdState()
+    data object Idle : AdState()
+    data object Loading : AdState()
+    data class Ready(val responseId: String) : AdState()
+    data object Showing : AdState()
     data class Rewarded(val rewardAmount: Int) : AdState()
     data class Error(val message: String) : AdState()
 }
@@ -31,22 +30,20 @@ class TapsellManager private constructor() {
 
     companion object {
         private const val TAG = "TapsellManager"
-
-        // Default test / production zone for rewarded ads
-        const val DEFAULT_ZONE_REWARDED_VIDEO = "66f00112233445566778899a"
+        const val REWARDED_ZONE_ID = "arena_rewarded_video_zone"
 
         @Volatile
-        private var instance: TapsellManager? = null
+        private var INSTANCE: TapsellManager? = null
 
         fun getInstance(): TapsellManager {
-            return instance ?: synchronized(this) {
-                instance ?: TapsellManager().also { instance = it }
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: TapsellManager().also { INSTANCE = it }
             }
         }
     }
 
-    private val _isInitialized = MutableStateFlow(false)
-    val isInitialized: StateFlow<Boolean> = _isInitialized.asStateFlow()
+    private var isInitialized = false
+    private val isInitializing = AtomicBoolean(false)
 
     private val _adState = MutableStateFlow<AdState>(AdState.Idle)
     val adState: StateFlow<AdState> = _adState.asStateFlow()
@@ -64,167 +61,122 @@ class TapsellManager private constructor() {
             ""
         }
 
-    /**
-     * Initializes Tapsell Plus SDK with real credentials.
-     * Must be called during Application onCreate or early Activity lifecycle.
-     */
-    fun initialize(context: Context, onComplete: ((Boolean) -> Unit)? = null) {
-        if (_isInitialized.value) {
-            onComplete?.invoke(true)
+    fun initialize(context: Context, onInitialized: ((Boolean) -> Unit)? = null) {
+        if (isInitialized) {
+            onInitialized?.invoke(true)
             return
         }
 
-        val appKey = tapsellAppKey.ifBlank {
-            // Standard fallback key for Tapsell Plus
-            "skhglmsmshkdkfrirqgkrpkmsnljfmsfkplhkmotdckdsqrnlff"
+        val appKey = tapsellAppKey
+        if (appKey.isBlank()) {
+            Log.w(TAG, "Tapsell appKey is not configured. Tapsell SDK initialization skipped.")
+            onInitialized?.invoke(false)
+            return
         }
 
-        _adState.value = AdState.Initializing
-        Log.d(TAG, "Initializing real Tapsell Plus SDK...")
-
-        try {
-            TapsellPlus.initialize(context.applicationContext, appKey, object : TapsellPlusInitListener {
-                override fun onInitializeSuccess(adNetworks: AdNetworks?) {
-                    Log.d(TAG, "Tapsell Plus initialized successfully")
-                    _isInitialized.value = true
-                    _adState.value = AdState.Ready
-                    onComplete?.invoke(true)
-
-                    val action = pendingInitAction
-                    pendingInitAction = null
-                    action?.invoke()
-                }
-
-                override fun onInitializeFailed(adNetworks: AdNetworks?, adNetworkError: AdNetworkError?) {
-                    val errorMsg = adNetworkError?.errorMessage ?: "Unknown Tapsell init error"
-                    Log.e(TAG, "Tapsell Plus initialization failed: $errorMsg")
-                    _isInitialized.value = false
-                    _adState.value = AdState.Error("خطا در راه‌اندازی سیستم تبلیغات: $errorMsg")
-                    onComplete?.invoke(false)
-                    pendingInitAction = null
-                }
-            })
-        } catch (e: Exception) {
-            Log.e(TAG, "Exception during TapsellPlus.initialize: ${e.message}", e)
-            _isInitialized.value = false
-            _adState.value = AdState.Error("خطای غیرمنتظره در شروع تبلیغات: ${e.localizedMessage}")
-            onComplete?.invoke(false)
+        if (!isInitializing.compareAndSet(false, true)) {
+            Log.d(TAG, "Tapsell initialization already in progress.")
+            return
         }
+
+        TapsellPlus.initialize(context, appKey, object : TapsellPlusInitListener {
+            override fun onInitializeSuccess(adNetworks: AdNetworks?) {
+                isInitialized = true
+                isInitializing.set(false)
+                Log.d(TAG, "TapsellPlus initialized successfully.")
+                onInitialized?.invoke(true)
+                pendingInitAction?.invoke()
+                pendingInitAction = null
+            }
+
+            override fun onInitializeFailed(adNetworks: AdNetworks?, adNetworkError: AdNetworkError?) {
+                isInitialized = false
+                isInitializing.set(false)
+                val errMsg = adNetworkError?.errorMessage ?: "خطای ناشناخته در مقداردهی تپسل"
+                Log.e(TAG, "TapsellPlus initialization failed: $errMsg")
+                onInitialized?.invoke(false)
+                pendingInitAction = null
+            }
+        })
     }
 
-    /**
-     * Shows a real Rewarded Video Ad using Tapsell Plus SDK.
-     * Order of execution:
-     * 1. Ensure initialized.
-     * 2. Request ad from Tapsell network -> get responseId.
-     * 3. Show ad using Activity.
-     * 4. onRewarded -> deliver reward exactly ONCE.
-     * 5. If ad fails or closed without completing -> do NOT reward.
-     */
-    fun showRewardedVideo(
-        activity: Activity,
-        rewardAmount: Int,
-        zoneId: String = DEFAULT_ZONE_REWARDED_VIDEO,
-        onRewarded: (Int) -> Unit,
-        onError: (String) -> Unit
-    ) {
-        if (isRequestInProgress.get() || isShowInProgress.get()) {
-            onError("یک درخواست تبلیغ هم‌اکنون در جریان است. لطفاً کمی صبر کنید.")
-            return
-        }
-
-        if (!_isInitialized.value) {
-            Log.d(TAG, "Tapsell not yet initialized, chaining request...")
-            pendingInitAction = {
-                showRewardedVideo(activity, rewardAmount, zoneId, onRewarded, onError)
+    fun requestRewardedVideo(activity: Activity, zoneId: String = REWARDED_ZONE_ID) {
+        if (!isInitialized) {
+            val appKey = tapsellAppKey
+            if (appKey.isBlank()) {
+                _adState.value = AdState.Error("کلید تپسل هنوز تنظیم نشده است.")
+                return
             }
+            pendingInitAction = { requestRewardedVideo(activity, zoneId) }
             initialize(activity)
             return
         }
 
-        isRequestInProgress.set(true)
-        _adState.value = AdState.LoadingAd
-
-        try {
-            TapsellPlus.requestRewardedVideoAd(activity, zoneId, object : AdRequestCallback() {
-                override fun response(tapsellPlusAdModel: TapsellPlusAdModel?) {
-                    isRequestInProgress.set(false)
-                    val responseId = tapsellPlusAdModel?.responseId
-
-                    if (responseId.isNullOrBlank()) {
-                        _adState.value = AdState.Error("شناسه تبلیغ دریافت نشد.")
-                        onError("شناسه تبلیغ از تپسل دریافت نشد.")
-                        return
-                    }
-
-                    Log.d(TAG, "Rewarded ad requested successfully. ResponseId: $responseId. Now showing...")
-                    displayLoadedAd(activity, responseId, rewardAmount, onRewarded, onError)
-                }
-
-                override fun error(errorMessage: String?) {
-                    isRequestInProgress.set(false)
-                    val msg = errorMessage ?: "تبلیغی برای نمایش یافت نشد."
-                    Log.e(TAG, "Tapsell request error: $msg")
-                    _adState.value = AdState.Error(msg)
-                    onError(msg)
-                }
-            })
-        } catch (e: Exception) {
-            isRequestInProgress.set(false)
-            Log.e(TAG, "Exception requesting rewarded ad: ${e.message}", e)
-            _adState.value = AdState.Error("خطا در درخواست تبلیغ: ${e.localizedMessage}")
-            onError("خطا در درخواست تبلیغ: ${e.localizedMessage}")
+        if (!isRequestInProgress.compareAndSet(false, true)) {
+            Log.w(TAG, "Ad request already in progress. Skipping.")
+            return
         }
+
+        _adState.value = AdState.Loading
+
+        TapsellPlus.requestRewardedVideoAd(activity, zoneId, object : AdRequestCallback() {
+            override fun response(tapsellPlusAdModel: TapsellPlusAdModel) {
+                isRequestInProgress.set(false)
+                val responseId = tapsellPlusAdModel.responseId
+                Log.d(TAG, "Rewarded ad is ready with responseId: $responseId")
+                _adState.value = AdState.Ready(responseId)
+            }
+
+            override fun error(errorMessage: String?) {
+                isRequestInProgress.set(false)
+                val msg = errorMessage ?: "خطا در دریافت ویدیو جایزه‌دار"
+                Log.e(TAG, "Error requesting rewarded ad: $msg")
+                _adState.value = AdState.Error(msg)
+            }
+        })
     }
 
-    private fun displayLoadedAd(
+    fun showRewardedVideo(
         activity: Activity,
         responseId: String,
-        rewardAmount: Int,
+        rewardCoins: Int = 100,
         onRewarded: (Int) -> Unit,
         onError: (String) -> Unit
     ) {
-        isShowInProgress.set(true)
-        _adState.value = AdState.ShowingAd
-
-        // Atomic guard ensuring reward is delivered at most once per ad show
-        val hasRewarded = AtomicBoolean(false)
-
-        try {
-            TapsellPlus.showRewardedVideoAd(activity, responseId, object : AdShowListener() {
-                override fun onOpened(adModel: TapsellPlusAdModel?) {
-                    Log.d(TAG, "Tapsell rewarded ad opened")
-                }
-
-                override fun onClosed(adModel: TapsellPlusAdModel?) {
-                    Log.d(TAG, "Tapsell rewarded ad closed")
-                    isShowInProgress.set(false)
-                    _adState.value = AdState.Ready
-                }
-
-                override fun onRewarded(adModel: TapsellPlusAdModel?) {
-                    Log.d(TAG, "Tapsell rewarded ad completed by user! Granting reward...")
-                    if (hasRewarded.compareAndSet(false, true)) {
-                        _adState.value = AdState.Rewarded(rewardAmount)
-                        onRewarded(rewardAmount)
-                    } else {
-                        Log.w(TAG, "Duplicate onRewarded callback ignored")
-                    }
-                }
-
-                override fun onError(errorModel: TapsellPlusErrorModel?) {
-                    isShowInProgress.set(false)
-                    val msg = errorModel?.errorMessage ?: "خطا در حین پخش تبلیغ"
-                    Log.e(TAG, "Tapsell ad display error: $msg")
-                    _adState.value = AdState.Error(msg)
-                    onError(msg)
-                }
-            })
-        } catch (e: Exception) {
-            isShowInProgress.set(false)
-            Log.e(TAG, "Exception showing rewarded ad: ${e.message}", e)
-            _adState.value = AdState.Error("خطا در نمایش ویدیو: ${e.localizedMessage}")
-            onError("خطا در نمایش ویدیو: ${e.localizedMessage}")
+        if (!isShowInProgress.compareAndSet(false, true)) {
+            Log.w(TAG, "Ad is already showing. Ignoring duplicate show call.")
+            return
         }
+
+        _adState.value = AdState.Showing
+        val rewardDelivered = AtomicBoolean(false)
+
+        TapsellPlus.showRewardedVideoAd(activity, responseId, object : AdShowListener() {
+            override fun onOpened(tapsellPlusAdModel: TapsellPlusAdModel) {
+                Log.d(TAG, "Ad opened: ${tapsellPlusAdModel.responseId}")
+            }
+
+            override fun onClosed(tapsellPlusAdModel: TapsellPlusAdModel) {
+                isShowInProgress.set(false)
+                Log.d(TAG, "Ad closed: ${tapsellPlusAdModel.responseId}")
+                _adState.value = AdState.Idle
+            }
+
+            override fun onRewarded(tapsellPlusAdModel: TapsellPlusAdModel) {
+                Log.d(TAG, "Ad completed and user rewarded: ${tapsellPlusAdModel.responseId}")
+                if (rewardDelivered.compareAndSet(false, true)) {
+                    _adState.value = AdState.Rewarded(rewardCoins)
+                    onRewarded(rewardCoins)
+                }
+            }
+
+            override fun onError(tapsellPlusErrorModel: TapsellPlusErrorModel) {
+                isShowInProgress.set(false)
+                val errorMsg = tapsellPlusErrorModel.errorMessage ?: "خطا در حین نمایش ویدیو تبلیغاتی"
+                Log.e(TAG, "Ad playback error: $errorMsg")
+                _adState.value = AdState.Error(errorMsg)
+                onError(errorMsg)
+            }
+        })
     }
 }

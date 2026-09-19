@@ -6,10 +6,12 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.ads.AdState
 import com.example.ads.TapsellManager
 import com.example.billing.BazaarBillingManager
 import com.example.billing.BazaarConfig
 import com.example.billing.PurchaseResult
+import com.example.billing.VerifiedPurchase
 import com.example.data.local.entity.ChallengeItemEntity
 import com.example.data.local.entity.GameSettingsEntity
 import com.example.data.local.entity.LeaderboardEntryEntity
@@ -20,15 +22,12 @@ import com.example.data.local.entity.VipStateEntity
 import com.example.data.repository.GameRepository
 import com.example.data.repository.UserRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlin.random.Random
 
 sealed class UiEvent {
     data class ShowSnackbar(val message: String) : UiEvent()
@@ -42,234 +41,211 @@ class ArenaViewModel(
     val tapsellManager: TapsellManager
 ) : ViewModel() {
 
-    val userProfile: StateFlow<UserProfileEntity?> = userRepository.userProfileFlow
+    val userProfile: StateFlow<UserProfileEntity?> = userRepository.userProfile
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val vipState: StateFlow<VipStateEntity?> = userRepository.vipStateFlow
+    val vipState: StateFlow<VipStateEntity?> = userRepository.vipState
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val challenges: StateFlow<List<ChallengeItemEntity>> = gameRepository.challengesFlow
+    val challenges: StateFlow<List<ChallengeItemEntity>> = gameRepository.challenges
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val rewards: StateFlow<List<RewardItemEntity>> = gameRepository.rewardsFlow
+    val rewards: StateFlow<List<RewardItemEntity>> = gameRepository.rewards
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val leaderboard: StateFlow<List<LeaderboardEntryEntity>> = gameRepository.leaderboardFlow
+    val leaderboard: StateFlow<List<LeaderboardEntryEntity>> = gameRepository.leaderboard
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val matchHistory: StateFlow<List<MatchHistoryEntity>> = gameRepository.matchHistoryFlow
+    val matchHistory: StateFlow<List<MatchHistoryEntity>> = gameRepository.matchHistory
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val settings: StateFlow<GameSettingsEntity?> = gameRepository.settingsFlow
+    val settings: StateFlow<GameSettingsEntity?> = gameRepository.settings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val adState: StateFlow<AdState> = tapsellManager.adState
 
     private val _uiEvents = MutableSharedFlow<UiEvent>()
     val uiEvents: SharedFlow<UiEvent> = _uiEvents.asSharedFlow()
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
     init {
-        // Listen to verified purchase events from BazaarBillingManager
+        observeBillingEvents()
+    }
+
+    private fun observeBillingEvents() {
         viewModelScope.launch {
             billingManager.purchaseEvents.collect { result ->
-                handlePurchaseResult(result)
-            }
-        }
-    }
-
-    private fun handlePurchaseResult(result: PurchaseResult) {
-        viewModelScope.launch {
-            when (result) {
-                is PurchaseResult.Success -> {
-                    // Only genuine verified purchase tokens are processed here
-                    when (result.productId) {
-                        BazaarConfig.PRODUCT_VIP_MONTHLY, BazaarConfig.PRODUCT_VIP_YEARLY -> {
-                            val activated = userRepository.activateVipWithToken(
-                                productId = result.productId,
-                                purchaseToken = result.purchaseToken
-                            )
-                            if (activated) {
-                                val durationText = if (result.productId == BazaarConfig.PRODUCT_VIP_MONTHLY) "۳۰ روزه" else "یک ساله"
-                                _uiEvents.emit(UiEvent.ShowSnackbar("اشتراک VIP $durationText با موفقیت فعال شد!"))
-                            } else {
-                                _uiEvents.emit(UiEvent.ShowSnackbar("خطا در فعال‌سازی VIP: توکن خرید نامعتبر است."))
-                            }
-                        }
-                        BazaarConfig.PRODUCT_COINS_1000 -> {
-                            userRepository.addCoins(1000)
-                            billingManager.consumePurchase(result.purchaseToken)
-                            _uiEvents.emit(UiEvent.ShowSnackbar("۱,۰۰۰ سکه با موفقیت به حساب شما اضافه شد!"))
-                        }
-                        BazaarConfig.PRODUCT_COINS_5000 -> {
-                            userRepository.addCoins(5000)
-                            billingManager.consumePurchase(result.purchaseToken)
-                            _uiEvents.emit(UiEvent.ShowSnackbar("۵,۰۰۰ سکه طلایی با موفقیت دریافت شد!"))
-                        }
-                        BazaarConfig.PRODUCT_TICKETS_10 -> {
-                            userRepository.addTickets(10)
-                            billingManager.consumePurchase(result.purchaseToken)
-                            _uiEvents.emit(UiEvent.ShowSnackbar("۱۰ بلیط نبرد طلایی به موجودی شما افزوده شد!"))
-                        }
-                        else -> {
-                            _uiEvents.emit(UiEvent.ShowSnackbar("محصول خریداری شده شناسایی نشد."))
-                        }
+                when (result) {
+                    is PurchaseResult.Success -> {
+                        handleVerifiedPurchase(result.purchase)
+                    }
+                    is PurchaseResult.Error -> {
+                        _uiEvents.emit(UiEvent.ShowSnackbar("خطای پرداخت: ${result.message}"))
+                    }
+                    is PurchaseResult.VerificationFailed -> {
+                        _uiEvents.emit(UiEvent.ShowSnackbar("خطای امنیتی: ${result.reason}"))
+                    }
+                    is PurchaseResult.UserCancelled -> {
+                        _uiEvents.emit(UiEvent.ShowSnackbar("خرید توسط کاربر لغو گردید."))
                     }
                 }
-                is PurchaseResult.Error -> {
-                    _uiEvents.emit(UiEvent.ShowSnackbar(result.message))
-                }
-                is PurchaseResult.Canceled -> {
-                    _uiEvents.emit(UiEvent.ShowSnackbar(result.message))
-                }
             }
         }
     }
 
-    /**
-     * Starts Bazaar purchase flow for the specified product.
-     */
-    fun purchaseProduct(launcher: ActivityResultLauncher<IntentSenderRequest>, productId: String) {
-        billingManager.launchPurchase(launcher, productId)
+    private suspend fun handleVerifiedPurchase(purchase: VerifiedPurchase) {
+        when (purchase.productId) {
+            BazaarConfig.PRODUCT_VIP_MONTHLY -> {
+                userRepository.activateVip(30, "monthly", purchase.purchaseToken)
+                _uiEvents.emit(UiEvent.ShowSnackbar("اشتراک VIP ماهانه با موفقیت فعال شد!"))
+            }
+            BazaarConfig.PRODUCT_VIP_YEARLY -> {
+                userRepository.activateVip(365, "yearly", purchase.purchaseToken)
+                _uiEvents.emit(UiEvent.ShowSnackbar("اشتراک طلایی سالانه VIP با موفقیت فعال شد!"))
+            }
+            BazaarConfig.PRODUCT_COINS_1000 -> {
+                userRepository.addCurrency(1000, 0)
+                billingManager.consumePurchase(purchase.purchaseToken)
+                _uiEvents.emit(UiEvent.ShowSnackbar("بسته ۱۰۰۰ سکه به حساب شما اضافه شد!"))
+            }
+            BazaarConfig.PRODUCT_COINS_5000 -> {
+                userRepository.addCurrency(5000, 0)
+                billingManager.consumePurchase(purchase.purchaseToken)
+                _uiEvents.emit(UiEvent.ShowSnackbar("بسته ۵۰۰۰ سکه به حساب شما اضافه شد!"))
+            }
+            BazaarConfig.PRODUCT_TICKETS_10 -> {
+                userRepository.addCurrency(0, 10)
+                billingManager.consumePurchase(purchase.purchaseToken)
+                _uiEvents.emit(UiEvent.ShowSnackbar("۱۰ بلیط ورود به آرنا به موجودی شما افزوده شد!"))
+            }
+            else -> {
+                _uiEvents.emit(UiEvent.ShowSnackbar("خرید محصول ${purchase.productId} تایید شد."))
+            }
+        }
     }
 
-    /**
-     * Restore purchases cryptographically verified from Bazaar.
-     */
+    fun buyProduct(
+        activityLauncher: ActivityResultLauncher<IntentSenderRequest>,
+        productId: String
+    ) {
+        billingManager.launchPurchaseFlow(activityLauncher, productId)
+    }
+
     fun restorePurchases() {
         viewModelScope.launch {
-            _isLoading.value = true
-            val verifiedPurchases = billingManager.restorePurchases()
-            _isLoading.value = false
-
-            if (verifiedPurchases.isEmpty()) {
-                _uiEvents.emit(UiEvent.ShowSnackbar("هیچ خرید یا اشتراک فعالی در حساب کافه بازار شما یافت نشد."))
-                return@launch
-            }
-
-            var vipRestored = false
-            for (purchase in verifiedPurchases) {
-                if (purchase.productId == BazaarConfig.PRODUCT_VIP_MONTHLY ||
-                    purchase.productId == BazaarConfig.PRODUCT_VIP_YEARLY
-                ) {
-                    val success = userRepository.activateVipWithToken(
-                        productId = purchase.productId,
-                        purchaseToken = purchase.purchaseToken
-                    )
-                    if (success) {
-                        vipRestored = true
+            _uiEvents.emit(UiEvent.ShowSnackbar("در حال استعلام و بازیابی خریدهای پیشین از کافه بازار..."))
+            billingManager.queryPurchases { purchases ->
+                if (purchases.isEmpty()) {
+                    viewModelScope.launch {
+                        _uiEvents.emit(UiEvent.ShowSnackbar("هیچ خرید فعالی در حساب بازار شما یافت نشد."))
                     }
+                    return@queryPurchases
                 }
-            }
 
-            if (vipRestored) {
-                _uiEvents.emit(UiEvent.ShowSnackbar("اشتراک VIP شما با موفقیت بازیابی شد!"))
-            } else {
-                _uiEvents.emit(UiEvent.ShowSnackbar("${verifiedPurchases.size} خرید بازیابی شد."))
-            }
-        }
-    }
-
-    /**
-     * Shows a real Rewarded Video Ad via Tapsell Plus.
-     */
-    fun watchRewardedAd(activity: Activity, rewardType: String = "coins") {
-        val rewardAmount = if (rewardType == "coins") 150 else 2
-        tapsellManager.showRewardedVideo(
-            activity = activity,
-            rewardAmount = rewardAmount,
-            onRewarded = { grantedAmount ->
                 viewModelScope.launch {
-                    if (rewardType == "coins") {
-                        userRepository.addCoins(grantedAmount)
-                        _uiEvents.emit(UiEvent.ShowSnackbar("پاداش ویدیو: $grantedAmount سکه به حساب شما واریز شد!"))
+                    var restoredCount = 0
+                    purchases.forEach { purchase ->
+                        if (purchase.productId == BazaarConfig.PRODUCT_VIP_MONTHLY) {
+                            userRepository.activateVip(30, "monthly", purchase.purchaseToken)
+                            restoredCount++
+                        } else if (purchase.productId == BazaarConfig.PRODUCT_VIP_YEARLY) {
+                            userRepository.activateVip(365, "yearly", purchase.purchaseToken)
+                            restoredCount++
+                        }
+                    }
+
+                    if (restoredCount > 0) {
+                        _uiEvents.emit(UiEvent.ShowSnackbar("اشتراک VIP شما با موفقیت بازیابی شد."))
                     } else {
-                        userRepository.addTickets(grantedAmount)
-                        _uiEvents.emit(UiEvent.ShowSnackbar("پاداش ویدیو: $grantedAmount بلیط نبرد دریافت کردید!"))
+                        _uiEvents.emit(UiEvent.ShowSnackbar("خریدهای پیشین بررسی شد؛ اشتراک فعالی یافت نشد."))
                     }
                 }
-            },
-            onError = { errorMsg ->
-                viewModelScope.launch {
-                    _uiEvents.emit(UiEvent.ShowSnackbar(errorMsg))
-                }
             }
-        )
-    }
-
-    /**
-     * Simulates an Arena Battle:
-     * Costs 1 ticket, awards coins and trophies on victory.
-     */
-    fun startBattle(arenaTierName: String, coinBet: Int) {
-        viewModelScope.launch {
-            val hasTicket = userRepository.spendTicket()
-            if (!hasTicket) {
-                _uiEvents.emit(UiEvent.ShowSnackbar("برای ورود به میدان نبرد نیاز به حداقل ۱ بلیط دارید!"))
-                return@launch
-            }
-
-            _isLoading.value = true
-            // Quick deterministic battle calculation based on user level and random RNG
-            val isVictory = Random.nextInt(100) < 65
-            val playerScore = if (isVictory) 3 else Random.nextInt(1, 3)
-            val opponentScore = if (isVictory) Random.nextInt(0, 2) else 3
-            val coinsEarned = if (isVictory) coinBet * 2 else 20
-            val trophiesDelta = if (isVictory) 30 else -12
-
-            val opponents = listOf("سهراب_شکارچی", "شیر_بابل", "طوفان_سرخ", "عقاب_زاگرس", "شوالیه_تاریک")
-            val opponentName = opponents.random()
-
-            if (isVictory) {
-                userRepository.addCoins(coinsEarned)
-            }
-            userRepository.updateTrophies(trophiesDelta)
-
-            gameRepository.recordMatch(
-                opponentName = opponentName,
-                isVictory = isVictory,
-                playerScore = playerScore,
-                opponentScore = opponentScore,
-                coinsEarned = coinsEarned,
-                trophiesDelta = trophiesDelta
-            )
-
-            _isLoading.value = false
-            _uiEvents.emit(UiEvent.BattleFinished(isVictory, coinsEarned, trophiesDelta))
         }
     }
 
     fun claimDailyReward(reward: RewardItemEntity) {
         viewModelScope.launch {
-            val claimed = gameRepository.claimReward(reward)
-            if (claimed) {
-                when (reward.rewardType) {
-                    "coins" -> userRepository.addCoins(reward.amount)
-                    "tickets" -> userRepository.addTickets(reward.amount)
-                    "chest" -> {
-                        userRepository.addCoins(reward.amount * 250)
-                        userRepository.addTickets(2)
+            if (!reward.isAvailable) {
+                _uiEvents.emit(UiEvent.ShowSnackbar("این هدیه هنوز آماده دریافت نیست."))
+                return@launch
+            }
+            gameRepository.claimReward(reward.id)
+            userRepository.addCurrency(reward.rewardCoins, reward.rewardTickets)
+            _uiEvents.emit(UiEvent.ShowSnackbar("هدیه دریافت شد: +${reward.rewardCoins} سکه، +${reward.rewardTickets} بلیط"))
+        }
+    }
+
+    fun watchRewardedAd(activity: Activity) {
+        val currentState = adState.value
+        if (currentState is AdState.Ready) {
+            tapsellManager.showRewardedVideo(
+                activity = activity,
+                responseId = currentState.responseId,
+                rewardCoins = 150,
+                onRewarded = { coins ->
+                    viewModelScope.launch {
+                        userRepository.addCurrency(coins, 0)
+                        _uiEvents.emit(UiEvent.ShowSnackbar("تبریک! $coins سکه به موجودی شما افزوده شد."))
+                    }
+                },
+                onError = { error ->
+                    viewModelScope.launch {
+                        _uiEvents.emit(UiEvent.ShowSnackbar("خطا در نمایش ویدیو: $error"))
                     }
                 }
-                _uiEvents.emit(UiEvent.ShowSnackbar("جایزه '${reward.title}' با موفقیت دریافت شد!"))
+            )
+        } else {
+            tapsellManager.requestRewardedVideo(activity)
+            viewModelScope.launch {
+                _uiEvents.emit(UiEvent.ShowSnackbar("در حال آماده‌سازی ویدیوی جایزه‌دار تپسل..."))
             }
         }
     }
 
-    fun claimChallengeReward(challenge: ChallengeItemEntity) {
+    fun startBattle(arenaName: String, ticketCost: Int) {
         viewModelScope.launch {
-            val claimed = gameRepository.claimChallengeReward(challenge)
-            if (claimed) {
-                userRepository.addCoins(challenge.rewardCoins)
-                _uiEvents.emit(UiEvent.ShowSnackbar("پاداش چالش '${challenge.title}' دریافت شد (${challenge.rewardCoins} سکه)!"))
+            val hasTicket = userRepository.deductTickets(ticketCost)
+            if (!hasTicket) {
+                _uiEvents.emit(UiEvent.ShowSnackbar("بلیط کافی برای ورود به $arenaName ندارید!"))
+                return@launch
             }
+
+            val opponents = listOf("سردار آتش", "تندر سیاه", "گرگ صحرا", "عقاب البرز", "تکاور زاگرس")
+            val opponent = opponents.random()
+            val isVictory = (1..100).random() <= 70
+
+            val coinsEarned = if (isVictory) 120 else 20
+            val trophiesDelta = if (isVictory) 30 else -15
+
+            userRepository.addCurrency(coinsEarned, 0)
+            userRepository.recordMatchResult(trophiesDelta, isVictory)
+
+            gameRepository.recordMatch(
+                MatchHistoryEntity(
+                    opponentName = opponent,
+                    isVictory = isVictory,
+                    arenaName = arenaName,
+                    coinsDelta = coinsEarned,
+                    trophiesDelta = trophiesDelta
+                )
+            )
+
+            _uiEvents.emit(UiEvent.BattleFinished(isVictory, coinsEarned, trophiesDelta))
+        }
+    }
+
+    fun claimChallenge(challenge: ChallengeItemEntity) {
+        viewModelScope.launch {
+            if (!challenge.isCompleted || challenge.isClaimed) return@launch
+            gameRepository.claimChallengeReward(challenge.id)
+            userRepository.addCurrency(challenge.rewardCoins, 0)
+            _uiEvents.emit(UiEvent.ShowSnackbar("پاداش چالش دریافت شد: +${challenge.rewardCoins} سکه"))
         }
     }
 
     fun updateSettings(settings: GameSettingsEntity) {
         viewModelScope.launch {
             gameRepository.updateSettings(settings)
-            _uiEvents.emit(UiEvent.ShowSnackbar("تنظیمات با موفقیت ذخیره شد."))
         }
     }
 }
@@ -283,8 +259,13 @@ class ArenaViewModelFactory(
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ArenaViewModel::class.java)) {
-            return ArenaViewModel(userRepository, gameRepository, billingManager, tapsellManager) as T
+            return ArenaViewModel(
+                userRepository,
+                gameRepository,
+                billingManager,
+                tapsellManager
+            ) as T
         }
-        throw IllegalArgumentException("Unknown ViewModel class")
+        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }

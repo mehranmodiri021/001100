@@ -17,85 +17,76 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface UserDao {
     @Query("SELECT * FROM user_profile WHERE id = 1")
-    fun getUserProfileFlow(): Flow<UserProfileEntity?>
-
-    @Query("SELECT * FROM user_profile WHERE id = 1")
-    suspend fun getUserProfile(): UserProfileEntity?
+    fun getUserProfile(): Flow<UserProfileEntity?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdateProfile(profile: UserProfileEntity)
 
-    @Query("UPDATE user_profile SET coins = coins + :amount WHERE id = 1")
-    suspend fun addCoins(amount: Int)
+    @Query("UPDATE user_profile SET coins = coins + :coins, tickets = tickets + :tickets WHERE id = 1")
+    suspend fun addCurrency(coins: Int, tickets: Int)
 
-    @Query("UPDATE user_profile SET tickets = tickets + :amount WHERE id = 1")
-    suspend fun addTickets(amount: Int)
+    @Query("UPDATE user_profile SET coins = coins - :coins WHERE id = 1 AND coins >= :coins")
+    suspend fun deductCoins(coins: Int): Int
 
-    @Query("UPDATE user_profile SET trophies = trophies + :delta WHERE id = 1")
-    suspend fun updateTrophies(delta: Int)
+    @Query("UPDATE user_profile SET tickets = tickets - :tickets WHERE id = 1 AND tickets >= :tickets")
+    suspend fun deductTickets(tickets: Int): Int
+
+    @Query("UPDATE user_profile SET trophies = trophies + :trophiesDelta, totalMatches = totalMatches + 1, victories = victories + :victoryIncrement WHERE id = 1")
+    suspend fun updateMatchOutcome(trophiesDelta: Int, victoryIncrement: Int)
 }
 
 @Dao
 interface VipDao {
     @Query("SELECT * FROM vip_state WHERE id = 1")
-    fun getVipStateFlow(): Flow<VipStateEntity?>
-
-    @Query("SELECT * FROM vip_state WHERE id = 1")
-    suspend fun getVipState(): VipStateEntity?
+    fun getVipState(): Flow<VipStateEntity?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun setVipState(vipState: VipStateEntity)
-
-    @Query("UPDATE vip_state SET isVip = 0 WHERE id = 1 AND expiresAt < :currentTime")
-    suspend fun checkAndExpireVip(currentTime: Long)
+    suspend fun insertOrUpdateVip(vipState: VipStateEntity)
 }
 
 @Dao
 interface RewardDao {
-    @Query("SELECT * FROM reward_items ORDER BY id ASC")
-    fun getAllRewardsFlow(): Flow<List<RewardItemEntity>>
+    @Query("SELECT * FROM reward_items")
+    fun getAllRewards(): Flow<List<RewardItemEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertRewards(rewards: List<RewardItemEntity>)
+    suspend fun insertAll(rewards: List<RewardItemEntity>)
 
     @Update
     suspend fun updateReward(reward: RewardItemEntity)
 
-    @Query("SELECT COUNT(*) FROM reward_items")
-    suspend fun countRewards(): Int
+    @Query("UPDATE reward_items SET lastClaimedTimestamp = :timestamp WHERE id = :id")
+    suspend fun recordRewardClaim(id: String, timestamp: Long)
 }
 
 @Dao
 interface ChallengeDao {
-    @Query("SELECT * FROM challenges ORDER BY id ASC")
-    fun getAllChallengesFlow(): Flow<List<ChallengeItemEntity>>
+    @Query("SELECT * FROM challenge_items")
+    fun getAllChallenges(): Flow<List<ChallengeItemEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertChallenges(challenges: List<ChallengeItemEntity>)
+    suspend fun insertAll(challenges: List<ChallengeItemEntity>)
 
-    @Update
-    suspend fun updateChallenge(challenge: ChallengeItemEntity)
+    @Query("UPDATE challenge_items SET currentProgress = :progress, isCompleted = :completed WHERE id = :id")
+    suspend fun updateProgress(id: String, progress: Int, completed: Boolean)
 
-    @Query("SELECT COUNT(*) FROM challenges")
-    suspend fun countChallenges(): Int
+    @Query("UPDATE challenge_items SET isClaimed = 1 WHERE id = :id")
+    suspend fun markClaimed(id: String)
 }
 
 @Dao
 interface LeaderboardDao {
-    @Query("SELECT * FROM leaderboard ORDER BY rank ASC")
-    fun getLeaderboardFlow(): Flow<List<LeaderboardEntryEntity>>
+    @Query("SELECT * FROM leaderboard_entries ORDER BY rank ASC")
+    fun getLeaderboard(): Flow<List<LeaderboardEntryEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertLeaderboard(entries: List<LeaderboardEntryEntity>)
-
-    @Query("SELECT COUNT(*) FROM leaderboard")
-    suspend fun countEntries(): Int
+    suspend fun insertAll(entries: List<LeaderboardEntryEntity>)
 }
 
 @Dao
 interface MatchHistoryDao {
     @Query("SELECT * FROM match_history ORDER BY timestamp DESC LIMIT 20")
-    fun getRecentMatchesFlow(): Flow<List<MatchHistoryEntity>>
+    fun getRecentMatches(): Flow<List<MatchHistoryEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMatch(match: MatchHistoryEntity)
@@ -104,8 +95,8 @@ interface MatchHistoryDao {
 @Dao
 interface SettingsDao {
     @Query("SELECT * FROM game_settings WHERE id = 1")
-    fun getSettingsFlow(): Flow<GameSettingsEntity?>
+    fun getSettings(): Flow<GameSettingsEntity?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun saveSettings(settings: GameSettingsEntity)
+    suspend fun insertOrUpdate(settings: GameSettingsEntity)
 }

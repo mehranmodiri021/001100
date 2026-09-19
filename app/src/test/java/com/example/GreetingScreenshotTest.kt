@@ -18,17 +18,16 @@ import org.robolectric.annotation.GraphicsMode
 @Config(qualifiers = RobolectricDeviceQualifiers.Pixel8, sdk = [34])
 class GreetingScreenshotTest {
 
-    @get:Rule
-    val composeTestRule = createComposeRule()
+  @get:Rule val composeTestRule = createComposeRule()
 
-    @Test
-    fun splash_screen_screenshot() {
-        composeTestRule.setContent {
-            MyApplicationTheme {
-                SplashScreen(onSplashFinished = {})
-            }
-        }
-
-        composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/greeting.png")
+  @Test
+  fun greeting_screenshot() {
+    composeTestRule.setContent {
+      MyApplicationTheme(darkTheme = true) {
+        SplashScreen(onSplashFinished = {})
+      }
     }
+
+    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/greeting.png")
+  }
 }

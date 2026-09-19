@@ -2,8 +2,8 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,13 +14,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.MonetizationOn
-import androidx.compose.material.icons.filled.Stars
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -36,7 +35,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -53,107 +51,75 @@ fun ChallengesScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF0B0F19))
-            .padding(horizontal = 16.dp)
-            .testTag("challenges_screen"),
+            .testTag("challenges_lazy_column"),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Spacer(modifier = Modifier.height(8.dp))
-            // Banner
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("challenges_banner"),
-                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(Color(0xFF065F46), Color(0xFF1E293B))
-                            )
-                        )
-                        .padding(20.dp)
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFF59E0B).copy(alpha = 0.2f),
+                        modifier = Modifier.size(48.dp)
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "چالش‌های روزانه و هفتگی",
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                                color = Color.White
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = "با کامل کردن هر ماموریت در میدان نبرد، سکه و امتیاز تجربه (XP) پاداش بگیرید!",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFFE2E8F0)
-                            )
-                        }
-                        Surface(
+                        Icon(
+                            imageVector = Icons.Default.EmojiEvents,
+                            contentDescription = null,
+                            tint = Color(0xFFF59E0B),
                             modifier = Modifier
-                                .size(56.dp)
-                                .clip(CircleShape),
-                            color = Color(0xFF10B981).copy(alpha = 0.25f)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.EmojiEvents,
-                                    contentDescription = null,
-                                    tint = Color(0xFF34D399),
-                                    modifier = Modifier.size(32.dp)
-                                )
-                            }
-                        }
+                                .padding(10.dp)
+                                .size(28.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(14.dp))
+
+                    Column {
+                        Text(
+                            text = "چالش‌های فعال فصل",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White
+                        )
+                        Text(
+                            text = "ماموریت‌ها را تکمیل کرده و پاداش ویژه دریافت کنید",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF94A3B8)
+                        )
                     }
                 }
             }
         }
 
-        item {
-            Text(
-                text = "لیست چالش‌های فعال",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = Color.White,
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
-        }
-
         items(challenges) { challenge ->
-            val progressFraction = if (challenge.targetCount > 0) {
-                (challenge.currentCount.toFloat() / challenge.targetCount.toFloat()).coerceIn(0f, 1f)
-            } else 0f
-            val isReadyToClaim = challenge.isCompleted && !challenge.isRewardClaimed
+            val progressRatio = (challenge.currentProgress.toFloat() / challenge.targetCount.toFloat()).coerceIn(0f, 1f)
 
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .testTag("challenge_item_${challenge.id}"),
+                    .testTag("challenge_card_${challenge.id}"),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (challenge.isRewardClaimed) Color(0xFF161F2E) else Color(0xFF1E293B)
-                )
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
                             text = challenge.title,
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            color = if (challenge.isRewardClaimed) Color(0xFF94A3B8) else Color.White
+                            color = Color.White
                         )
+
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Default.MonetizationOn,
@@ -165,20 +131,20 @@ fun ChallengesScreen(
                             Text(
                                 text = "+${challenge.rewardCoins}",
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = Color(0xFFF59E0B)
+                                color = Color(0xFFFBBF24)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(
-                                imageVector = Icons.Default.Stars,
+                                imageVector = Icons.Default.Star,
                                 contentDescription = null,
                                 tint = Color(0xFF38BDF8),
                                 modifier = Modifier.size(16.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(2.dp))
                             Text(
                                 text = "+${challenge.rewardXp} XP",
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = Color(0xFF38BDF8)
+                                color = Color(0xFF7DD3FC)
                             )
                         }
                     }
@@ -195,79 +161,73 @@ fun ChallengesScreen(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        LinearProgressIndicator(
-                            progress = { progressFraction },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(8.dp)
-                                .clip(RoundedCornerShape(4.dp)),
-                            color = if (progressFraction >= 1f) Color(0xFF10B981) else Color(0xFF38BDF8),
-                            trackColor = Color(0xFF334155)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "${challenge.currentCount} / ${challenge.targetCount}",
+                            text = "پیشرفت",
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color(0xFFE2E8F0)
+                            color = Color(0xFF94A3B8)
+                        )
+                        Text(
+                            text = "${challenge.currentProgress} / ${challenge.targetCount}",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFFF59E0B)
                         )
                     }
 
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    LinearProgressIndicator(
+                        progress = { progressRatio },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp)),
+                        color = Color(0xFFF59E0B),
+                        trackColor = Color(0xFF334155)
+                    )
+
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        if (challenge.isRewardClaimed) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    tint = Color(0xFF10B981),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "دریافت شده",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color(0xFF10B981)
-                                )
-                            }
-                        } else if (isReadyToClaim) {
-                            Button(
-                                onClick = { viewModel.claimChallengeReward(challenge) },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.testTag("claim_challenge_${challenge.id}")
-                            ) {
-                                Text(
-                                    text = "دریافت پاداش",
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = Color.White
-                                )
-                            }
-                        } else {
-                            Surface(
-                                color = Color(0xFF334155),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text(
-                                    text = "در حال انجام",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color(0xFF94A3B8),
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                )
-                            }
+                    if (challenge.isClaimed) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = Color(0xFF10B981),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "دریافت شده",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF10B981)
+                            )
+                        }
+                    } else {
+                        Button(
+                            onClick = { viewModel.claimChallenge(challenge) },
+                            enabled = challenge.isCompleted,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFF59E0B),
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier
+                                .align(Alignment.End)
+                                .testTag("btn_claim_ch_${challenge.id}")
+                        ) {
+                            Text(
+                                text = if (challenge.isCompleted) "دریافت پاداش" else "در حال انجام",
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
             }
-        }
-
-        item {
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,21 +14,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Vibration
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -39,8 +37,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -59,74 +55,51 @@ fun SettingsScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF0B0F19))
-            .padding(horizontal = 16.dp)
-            .testTag("settings_screen"),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+            .testTag("settings_lazy_column"),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Spacer(modifier = Modifier.height(8.dp))
-            // Settings Header
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(Color(0xFF334155), Color(0xFF1E293B))
-                            )
-                        )
-                        .padding(20.dp)
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFF38BDF8).copy(alpha = 0.2f),
+                        modifier = Modifier.size(48.dp)
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "تنظیمات بازی و حساب",
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                                color = Color.White
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "شخصی‌سازی صداها، لرزش و اطلاعات نسخه برنامه",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF94A3B8)
-                            )
-                        }
-
-                        Surface(
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = null,
+                            tint = Color(0xFF38BDF8),
                             modifier = Modifier
-                                .size(52.dp)
-                                .clip(CircleShape),
-                            color = Color(0xFF64748B).copy(alpha = 0.3f)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.Settings,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(30.dp)
-                                )
-                            }
-                        }
+                                .padding(10.dp)
+                                .size(28.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(14.dp))
+
+                    Column {
+                        Text(
+                            text = "تنظیمات بازی",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White
+                        )
+                        Text(
+                            text = "سفارشی‌سازی صدا، موسیقی و جلوه‌های بازی",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF94A3B8)
+                        )
                     }
                 }
             }
-        }
-
-        item {
-            Text(
-                text = "تنظیمات صوتی و بازخورد",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = Color.White,
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
         }
 
         item {
@@ -138,102 +111,126 @@ fun SettingsScreen(
                 Column(modifier = Modifier.padding(16.dp)) {
                     SettingToggleRow(
                         icon = Icons.AutoMirrored.Filled.VolumeUp,
-                        title = "جلوه‌های صوتی (Sound FX)",
-                        subtitle = "صدای برخوردها و افکت‌های ضربات آرنا",
-                        checked = currentSettings.soundEffects,
+                        title = "جلوه‌های صوتی (SFX)",
+                        description = "صدای برخورد شمشیرها و ضربات نبرد",
+                        isChecked = currentSettings.soundEffects,
                         onCheckedChange = { checked ->
                             viewModel.updateSettings(currentSettings.copy(soundEffects = checked))
-                        }
+                        },
+                        tag = "toggle_sfx"
                     )
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = Color(0xFF334155)
+                    )
 
                     SettingToggleRow(
                         icon = Icons.Default.MusicNote,
-                        title = "موسیقی پس‌زمینه (Music)",
-                        subtitle = "موسیقی حماسی منوها و صحنه مبارزه",
-                        checked = currentSettings.music,
+                        title = "موسیقی حماسی",
+                        description = "پخش موسیقی زمینه در میدان‌های آرنا",
+                        isChecked = currentSettings.music,
                         onCheckedChange = { checked ->
                             viewModel.updateSettings(currentSettings.copy(music = checked))
-                        }
+                        },
+                        tag = "toggle_music"
                     )
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = Color(0xFF334155)
+                    )
 
                     SettingToggleRow(
                         icon = Icons.Default.Vibration,
-                        title = "لرزش (Haptic Feedback)",
-                        subtitle = "ویبره گوشی هنگام اصابت ضربات مهلک",
-                        checked = currentSettings.vibration,
+                        title = "لرزش و بازخورد لمسی",
+                        description = "لرزش دستگاه هنگام ضربات مهلک",
+                        isChecked = currentSettings.vibration,
                         onCheckedChange = { checked ->
                             viewModel.updateSettings(currentSettings.copy(vibration = checked))
-                        }
+                        },
+                        tag = "toggle_vibration"
                     )
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = Color(0xFF334155)
+                    )
 
                     SettingToggleRow(
                         icon = Icons.Default.Notifications,
-                        title = "اعلان‌ها (Notifications)",
-                        subtitle = "یادآوری صندوقچه‌های رایگان و رویدادهای فصلی",
-                        checked = currentSettings.notifications,
+                        title = "اعلان صندوقچه‌ها و چالش‌ها",
+                        description = "یادآوری آماده شدن پاداش‌های رایگان",
+                        isChecked = currentSettings.notifications,
                         onCheckedChange = { checked ->
                             viewModel.updateSettings(currentSettings.copy(notifications = checked))
-                        }
+                        },
+                        tag = "toggle_notifications"
                     )
                 }
             }
         }
 
         item {
-            Text(
-                text = "درباره برنامه و توسعه‌دهنده",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = Color.White,
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
-        }
-
-        item {
+            // App & Developer Info Card
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("about_app_card"),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
             ) {
-                Column(modifier = Modifier.padding(18.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(24.dp))
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = Color(0xFF38BDF8),
+                            modifier = Modifier.size(20.dp)
+                        )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Arena Clash (آرنا کلش)",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            text = "درباره بازی آرنا کلش",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             color = Color.White
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    InfoRow(label = "نسخه انتشار:", value = "1.0.0 (نسخه رسمی کافه‌بازار)")
-                    InfoRow(label = "توسعه‌دهنده رسمی:", value = "سیدحمید موسوی زاده")
-                    InfoRow(label = "موتور پرداخت درون‌برنامه‌ای:", value = "Cafe Bazaar In-App Billing (نسخه ۳)")
-                    InfoRow(label = "پلتفرم تبلیغات ویدیویی:", value = "Tapsell Plus SDK 2.3.3")
-                    InfoRow(label = "پایگاه داده محلی:", value = "Room Database (SQLite آفلاین)")
-
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Text(
-                        text = "تمامی حقوق مادی و معنوی این اثر متعلق به سیدحمید موسوی زاده می‌باشد.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF64748B)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "توسعه‌دهنده:",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF94A3B8)
+                        )
+                        Text(
+                            text = "سیدحمید موسوی زاده",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color.White
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "نسخه انتشار کافه بازار:",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF94A3B8)
+                        )
+                        Text(
+                            text = "1.0.0 (Release)",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color(0xFF10B981)
+                        )
+                    }
                 }
             }
-        }
-
-        item {
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -242,62 +239,45 @@ fun SettingsScreen(
 fun SettingToggleRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
-    subtitle: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    description: String,
+    isChecked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    tag: String
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.weight(1f)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = Color(0xFF94A3B8),
-                modifier = Modifier.size(24.dp)
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color(0xFF94A3B8),
+            modifier = Modifier.size(22.dp)
+        )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = Color.White
             )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = Color.White
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF64748B)
-                )
-            }
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF94A3B8)
+            )
         }
 
         Switch(
-            checked = checked,
+            checked = isChecked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = Color(0xFF10B981),
-                uncheckedThumbColor = Color(0xFF94A3B8),
-                uncheckedTrackColor = Color(0xFF334155)
-            )
+                checkedThumbColor = Color.Black,
+                checkedTrackColor = Color(0xFFF59E0B)
+            ),
+            modifier = Modifier.testTag(tag)
         )
-    }
-}
-
-@Composable
-fun InfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(text = label, style = MaterialTheme.typography.bodySmall, color = Color(0xFF94A3B8))
-        Text(text = value, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium), color = Color(0xFFE2E8F0))
     }
 }

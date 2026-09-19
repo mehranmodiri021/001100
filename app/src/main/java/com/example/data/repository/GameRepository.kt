@@ -19,50 +19,29 @@ class GameRepository(
     private val matchHistoryDao: MatchHistoryDao,
     private val settingsDao: SettingsDao
 ) {
-    val challengesFlow: Flow<List<ChallengeItemEntity>> = challengeDao.getAllChallengesFlow()
-    val rewardsFlow: Flow<List<RewardItemEntity>> = rewardDao.getAllRewardsFlow()
-    val leaderboardFlow: Flow<List<LeaderboardEntryEntity>> = leaderboardDao.getLeaderboardFlow()
-    val matchHistoryFlow: Flow<List<MatchHistoryEntity>> = matchHistoryDao.getRecentMatchesFlow()
-    val settingsFlow: Flow<GameSettingsEntity?> = settingsDao.getSettingsFlow()
+    val challenges: Flow<List<ChallengeItemEntity>> = challengeDao.getAllChallenges()
+    val rewards: Flow<List<RewardItemEntity>> = rewardDao.getAllRewards()
+    val leaderboard: Flow<List<LeaderboardEntryEntity>> = leaderboardDao.getLeaderboard()
+    val matchHistory: Flow<List<MatchHistoryEntity>> = matchHistoryDao.getRecentMatches()
+    val settings: Flow<GameSettingsEntity?> = settingsDao.getSettings()
 
-    suspend fun claimReward(reward: RewardItemEntity): Boolean {
-        if (reward.isClaimed) return false
-        val updated = reward.copy(isClaimed = true, lastClaimedAt = System.currentTimeMillis())
-        rewardDao.updateReward(updated)
-        return true
+    suspend fun claimReward(rewardId: String) {
+        rewardDao.recordRewardClaim(rewardId, System.currentTimeMillis())
     }
 
-    suspend fun claimChallengeReward(challenge: ChallengeItemEntity): Boolean {
-        if (!challenge.isCompleted || challenge.isRewardClaimed) return false
-        val updated = challenge.copy(isRewardClaimed = true)
-        challengeDao.updateChallenge(updated)
-        return true
+    suspend fun updateChallengeProgress(id: String, progress: Int, completed: Boolean) {
+        challengeDao.updateProgress(id, progress, completed)
     }
 
-    suspend fun progressChallenge(challengeId: Int, increment: Int = 1) {
-        // Will be updated if present
+    suspend fun claimChallengeReward(id: String) {
+        challengeDao.markClaimed(id)
     }
 
-    suspend fun recordMatch(
-        opponentName: String,
-        isVictory: Boolean,
-        playerScore: Int,
-        opponentScore: Int,
-        coinsEarned: Int,
-        trophiesDelta: Int
-    ) {
-        val match = MatchHistoryEntity(
-            opponentName = opponentName,
-            isVictory = isVictory,
-            playerScore = playerScore,
-            opponentScore = opponentScore,
-            coinsEarned = coinsEarned,
-            trophiesDelta = trophiesDelta
-        )
+    suspend fun recordMatch(match: MatchHistoryEntity) {
         matchHistoryDao.insertMatch(match)
     }
 
     suspend fun updateSettings(settings: GameSettingsEntity) {
-        settingsDao.saveSettings(settings)
+        settingsDao.insertOrUpdate(settings)
     }
 }
