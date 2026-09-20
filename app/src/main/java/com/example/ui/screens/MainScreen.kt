@@ -1,4 +1,4 @@
-package com.example.ui.screens
+package com.arenaclash.game.ui.screens
 
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
@@ -34,9 +34,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.ui.navigation.Screen
-import com.example.ui.viewmodel.ArenaViewModel
-import com.example.ui.viewmodel.UiEvent
+import com.arenaclash.game.ui.navigation.Screen
+import com.arenaclash.game.ui.viewmodel.ArenaViewModel
+import com.arenaclash.game.ui.viewmodel.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
