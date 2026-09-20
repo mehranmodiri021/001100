@@ -1,4 +1,4 @@
-package com.example.ui.screens
+package com.arenaclash.game.ui.screens
 
 import android.app.Activity
 import androidx.compose.foundation.background
@@ -41,9 +41,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.ads.AdState
-import com.example.ui.components.TapsellBanner
-import com.example.ui.viewmodel.ArenaViewModel
+import com.arenaclash.game.ads.AdState
+import com.arenaclash.game.ui.components.TapsellBanner
+import com.arenaclash.game.ui.viewmodel.ArenaViewModel
 
 @Composable
 fun RewardsScreen(
