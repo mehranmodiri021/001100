@@ -32,7 +32,7 @@ import kotlinx.coroutines.launch
         MatchHistoryEntity::class,
         GameSettingsEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -80,15 +80,42 @@ abstract class AppDatabase : RoomDatabase() {
                 database.vipDao().insertOrUpdateVip(VipStateEntity())
                 database.settingsDao().insertOrUpdate(GameSettingsEntity())
 
+                // ═══════════════════════════════════════════════════════════════
+                // صندوق‌ها و جوایز رایگان
+                // ═══════════════════════════════════════════════════════════════
                 database.rewardDao().insertAll(
                     listOf(
-                        RewardItemEntity("daily_chest", "صندوق روزانه", "هر ۲۴ ساعت یکبار سکه و بلیط رایگان دریافت کنید", 250, 2, 1440),
-                        RewardItemEntity("bronze_chest", "صندوق برنزی", "صندوق آماده بازگشایی هر ۴ ساعت", 100, 1, 240),
-                        RewardItemEntity("video_chest", "صندوق تماشای ویدیو", "با تماشای ویدیوی حامی تپسل سکه دریافت کنید", 150, 0, 0)
+                        // صندوق روزانه - هر ۲۴ ساعت
+                        RewardItemEntity(
+                            id = "daily_chest",
+                            title = "صندوق روزانه",
+                            description = "هر ۲۴ ساعت یکبار سکه و بلیط رایگان دریافت کنید",
+                            rewardCoins = 250,
+                            rewardTickets = 2,
+                            cooldownMinutes = 1440
+                        ),
+                        // صندوق برنزی - هر ۴ ساعت
+                        RewardItemEntity(
+                            id = "bronze_chest",
+                            title = "صندوق برنزی",
+                            description = "صندوق آماده بازگشایی هر ۴ ساعت",
+                            rewardCoins = 100,
+                            rewardTickets = 1,
+                            cooldownMinutes = 240
+                        ),
+                        // صندوق نقره‌ای - هر ۲ ساعت (جایگزین video_chest)
+                        RewardItemEntity(
+                            id = "silver_chest",
+                            title = "صندوق نقره‌ای",
+                            description = "صندوق آماده بازگشایی هر ۲ ساعت",
+                            rewardCoins = 150,
+                            rewardTickets = 0,
+                            cooldownMinutes = 120
+                        )
                     )
                 )
 
-                // Clean initialization: All challenges start strictly from 0 progress
+                // چالش‌ها
                 database.challengeDao().insertAll(
                     listOf(
                         ChallengeItemEntity("ch_1", "شکارچی آرنا", "در ۳ نبرد آرنا پیروز شوید", 3, 0, 300, 150),
@@ -98,6 +125,7 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                 )
 
+                // جدول امتیازات اولیه
                 database.leaderboardDao().insertAll(
                     listOf(
                         LeaderboardEntryEntity(1, "شیر خاورمیانه", 3250, 145, isVip = true),
@@ -110,8 +138,6 @@ abstract class AppDatabase : RoomDatabase() {
                         LeaderboardEntryEntity(8, "جنگجوی آرنا (شما)", 0, 0, isVip = false, isCurrentUser = true)
                     )
                 )
-
-                // A clean installation must not have pre-seeded fake match history
             }
         }
     }
