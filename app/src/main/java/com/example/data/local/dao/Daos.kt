@@ -1,17 +1,17 @@
-package com.example.data.local.dao
+package com.arenaclash.game.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import com.example.data.local.entity.ChallengeItemEntity
-import com.example.data.local.entity.GameSettingsEntity
-import com.example.data.local.entity.LeaderboardEntryEntity
-import com.example.data.local.entity.MatchHistoryEntity
-import com.example.data.local.entity.RewardItemEntity
-import com.example.data.local.entity.UserProfileEntity
-import com.example.data.local.entity.VipStateEntity
+import com.arenaclash.game.data.local.entity.ChallengeItemEntity
+import com.arenaclash.game.data.local.entity.GameSettingsEntity
+import com.arenaclash.game.data.local.entity.LeaderboardEntryEntity
+import com.arenaclash.game.data.local.entity.MatchHistoryEntity
+import com.arenaclash.game.data.local.entity.RewardItemEntity
+import com.arenaclash.game.data.local.entity.UserProfileEntity
+import com.arenaclash.game.data.local.entity.VipStateEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
