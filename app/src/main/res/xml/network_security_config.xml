@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    تنظیمات امنیت شبکه برای Arena Clash
+    
+    این فایل:
+    - ارتباطات HTTP (بدون رمزنگاری) رو مسدود می‌کنه
+    - فقط ارتباطات HTTPS با گواهی‌های معتبر سیستم رو اجازه می‌ده
+    - برای تپسل، کافه‌بازار و سایر سرویس‌ها امنیت رو تضمین می‌کنه
+-->
+<network-security-config>
+    <!-- تنظیمات پیش‌فرض: فقط HTTPS، بدون HTTP -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
