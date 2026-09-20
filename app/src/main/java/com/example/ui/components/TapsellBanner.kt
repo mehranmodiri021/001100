@@ -1,4 +1,4 @@
-package com.example.ui.components
+package com.arenaclash.game.ui.components
 
 import android.app.Activity
 import android.view.ViewGroup
@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.example.ads.TapsellManager
+import com.arenaclash.game.ads.TapsellManager
 
 @Composable
 fun TapsellBanner(
@@ -34,14 +34,15 @@ fun TapsellBanner(
     }
 
     DisposableEffect(activity, zoneId) {
-        TapsellManager.getInstance().requestAndShowBanner(
+        // TapsellManager یک object است، پس بدون getInstance() صداش می‌زنیم
+        TapsellManager.requestAndShowBanner(
             activity = activity,
             container = container,
             zoneId = zoneId
         )
 
         onDispose {
-            TapsellManager.getInstance().destroyBanner(
+            TapsellManager.destroyBanner(
                 activity = activity,
                 container = container
             )
