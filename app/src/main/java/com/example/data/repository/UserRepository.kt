@@ -1,9 +1,9 @@
-package com.example.data.repository
+package com.arenaclash.game.data.repository
 
-import com.example.data.local.dao.UserDao
-import com.example.data.local.dao.VipDao
-import com.example.data.local.entity.UserProfileEntity
-import com.example.data.local.entity.VipStateEntity
+import com.arenaclash.game.data.local.dao.UserDao
+import com.arenaclash.game.data.local.dao.VipDao
+import com.arenaclash.game.data.local.entity.UserProfileEntity
+import com.arenaclash.game.data.local.entity.VipStateEntity
 import kotlinx.coroutines.flow.Flow
 
 class UserRepository(
