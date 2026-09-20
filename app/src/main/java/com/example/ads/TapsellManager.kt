@@ -31,9 +31,13 @@ sealed class AdState {
 object TapsellManager {
 
     private const val TAG = "TapsellManager"
-    const val REWARDED_ZONE_ID = "6aabb9d48c70901d2f6656ed"
-    const val BANNER_ZONE_ID = "6aabb9e98c70901d2f6656ee"
-    const val INTERSTITIAL_ZONE_ID = "6aac02bbdd01711161ca6efa"
+
+    // ═══════════════════════════════════════════════════════════════
+    // Zone ID های اختصاصی اپ "آرنا کلش"
+    // ═══════════════════════════════════════════════════════════════
+    const val REWARDED_ZONE_ID = "6ab0367372fad1012032e220"
+    const val BANNER_ZONE_ID = "6ab036ee72fad1012032e222"
+    const val INTERSTITIAL_ZONE_ID = "6ab036b872fad1012032e221"
 
     private var isInitialized = false
     private val isInitializing = AtomicBoolean(false)
