@@ -7,10 +7,8 @@ plugins {
 }
 
 android {
-    // namespace با applicationId یکسان است
     namespace = "com.arenaclash.game"
 
-    // سینتکس استاندارد compileSdk
     compileSdk = 36
 
     defaultConfig {
@@ -24,7 +22,6 @@ android {
     }
 
     signingConfigs {
-        // بخش release فقط وقتی ساخته می‌شود که همه متغیرهای محیطی موجود باشند
         val keystorePath = System.getenv("KEYSTORE_PATH")
         val storePasswordEnv = System.getenv("STORE_PASSWORD")
         val keyAliasEnv = System.getenv("KEY_ALIAS")
@@ -63,7 +60,6 @@ android {
         }
 
         debug {
-            // استفاده از signing config پیش‌فرض دیباگ اندروید
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -90,11 +86,15 @@ android {
     }
 }
 
-// پیکربندی پلاگین Secrets برای خواندن کلیدها از فایل .env
+// ═══════════════════════════════════════════════════════════════
+// Secrets Plugin: خواندن کلیدها از local.properties
+// ═══════════════════════════════════════════════════════════════
+// نکته: به جای .env، از local.properties استفاده می‌کنیم چون
+// پلاگین secrets با این فایل بهتر کار می‌کند و در CI/CD هم
+// به راحتی از روی GitHub Secrets ساخته می‌شود.
 secrets {
-    propertiesFileName = ".env"
-    defaultPropertiesFileName = ".env.example"
-    ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
+    propertiesFileName = "local.properties"
+    defaultPropertiesFileName = "local.properties"
 }
 
 dependencies {
@@ -128,8 +128,6 @@ dependencies {
 
     // ─── تپسل پلاس SDK (تبلیغات) ───
     implementation("ir.tapsell.plus:tapsell-plus-sdk-android:2.3.3")
-
-    // ⚠️ Poolakey حذف شد چون از AIDL مستقیم استفاده می‌کنیم (BazaarBillingManager)
 
     // ─── تست‌ها ───
     testImplementation(libs.androidx.compose.ui.test.junit4)
