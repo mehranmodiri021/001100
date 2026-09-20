@@ -63,7 +63,7 @@ fun RewardsScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            // Tapsell Rewarded Video Ad Card
+            // Tapsell Rewarded Video Ad Card (بالای صفحه، مستقل)
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -259,6 +259,8 @@ fun RewardsScreen(
         }
 
         items(rewards) { reward ->
+            val isVideoChest = reward.id == "silver_chest"
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -274,14 +276,14 @@ fun RewardsScreen(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFF38BDF8).copy(alpha = 0.2f),
+                        color = if (isVideoChest) Color(0xFFF59E0B).copy(alpha = 0.2f) else Color(0xFF38BDF8).copy(alpha = 0.2f),
                         modifier = Modifier.size(48.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = Icons.Default.CardGiftcard,
+                                imageVector = if (isVideoChest) Icons.Default.PlayCircle else Icons.Default.CardGiftcard,
                                 contentDescription = null,
-                                tint = Color(0xFF38BDF8),
+                                tint = if (isVideoChest) Color(0xFFF59E0B) else Color(0xFF38BDF8),
                                 modifier = Modifier.size(26.dp)
                             )
                         }
@@ -335,10 +337,18 @@ fun RewardsScreen(
                     }
 
                     Button(
-                        onClick = { viewModel.claimDailyReward(reward) },
+                        onClick = {
+                            if (isVideoChest) {
+                                // صندوق نقره‌ای → اول تبلیغ، بعد جایزه
+                                activity?.let { viewModel.claimVideoChestReward(it, reward) }
+                            } else {
+                                // صندوق روزانه و برنزی → مستقیم جایزه
+                                viewModel.claimDailyReward(reward)
+                            }
+                        },
                         enabled = reward.isAvailable,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF38BDF8),
+                            containerColor = if (isVideoChest) Color(0xFFF59E0B) else Color(0xFF38BDF8),
                             contentColor = Color.Black
                         ),
                         shape = RoundedCornerShape(10.dp),
