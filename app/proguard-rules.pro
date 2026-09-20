@@ -134,5 +134,5 @@
 # ─── مدل‌های پروژه (data classes) ───
 # ═══════════════════════════════════════════════════════════════
 # حفظ مدل‌های داده در پکیج پروژه
--keep class com.aistudio.challengearena.vxpqz.data.model.** { *; }
--keep class com.aistudio.challengearena.vxpqz.data.local.entity.** { *; }
+-keep class com.arenaclash.game.data.model.** { *; }
+-keep class com.arenaclash.game.data.local.entity.** { *; }
