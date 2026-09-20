@@ -7,14 +7,14 @@ plugins {
 }
 
 android {
-    // namespace با applicationId یکسان شد (قبلاً com.example بود که اشتباه است)
-    namespace = "com.aistudio.challengearena.vxpqz"
+    // namespace با applicationId یکسان است
+    namespace = "com.arenaclash.game"
 
     // سینتکس استاندارد compileSdk
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.aistudio.challengearena.vxpqz"
+        applicationId = "com.arenaclash.game"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
