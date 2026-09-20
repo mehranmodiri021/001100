@@ -1,10 +1,10 @@
-package com.example.ads
+package com.arenaclash.game.ads
 
 import android.app.Activity
 import android.content.Context
 import android.util.Log
 import android.view.ViewGroup
-import com.example.BuildConfig
+import com.arenaclash.game.BuildConfig
 import ir.tapsell.plus.AdRequestCallback
 import ir.tapsell.plus.AdShowListener
 import ir.tapsell.plus.TapsellPlus
@@ -56,10 +56,10 @@ class TapsellManager private constructor() {
     private val isShowInProgress = AtomicBoolean(false)
     private var pendingInitAction: (() -> Unit)? = null
 
+    // کلید تپسل از BuildConfig خوانده می‌شود (تزریق شده از .env توسط secrets plugin)
     val tapsellAppKey: String
         get() = try {
-            val field = BuildConfig::class.java.getField("TAPSELL_KEY")
-            val key = (field.get(null) as? String)?.trim().orEmpty()
+            val key = BuildConfig.TAPSELL_KEY.trim()
             if (key == "DEFAULT_TAPSELL_KEY" || key == "YOUR_TAPSELL_KEY") "" else key
         } catch (_: Exception) {
             ""
