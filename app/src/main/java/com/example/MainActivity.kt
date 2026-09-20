@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,13 +27,18 @@ class MainActivity : ComponentActivity() {
 
     private val app by lazy { application as ArenaClashApplication }
 
+    // لانچر برای دریافت نتیجه خرید از کافه‌بازار (AIDL-based)
+    private val purchaseLauncher = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        app.billingManager.handleActivityResult(result)
+    }
+
     private val viewModel: ArenaViewModel by viewModels {
         ArenaViewModelFactory(
             userRepository = app.userRepository,
             gameRepository = app.gameRepository,
-            billingManager = app.billingManager,
-            // TapsellManager الان object است، نه instance
-            // پس نیازی به پاس دادنش نیست
+            billingManager = app.billingManager
         )
     }
 
@@ -46,7 +52,10 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ArenaApp(viewModel = viewModel)
+                    ArenaApp(
+                        viewModel = viewModel,
+                        purchaseLauncher = purchaseLauncher
+                    )
                 }
             }
         }
@@ -54,15 +63,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // اتصال به سرویس پرداخت کافه‌بازار با callback
-        app.billingManager.connectToBazaarService(
-            onConnected = {
-                Log.d(TAG, "Bazaar billing service connected")
-            },
-            onFailed = { throwable ->
-                Log.e(TAG, "Bazaar billing connection failed", throwable)
-            }
-        )
+        // اتصال به سرویس پرداخت کافه‌بازار
+        app.billingManager.connectToBazaarService()
+        Log.d(TAG, "Attempting to connect to Bazaar billing service")
     }
 
     override fun onDestroy() {
@@ -77,7 +80,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun ArenaApp(viewModel: ArenaViewModel) {
+fun ArenaApp(
+    viewModel: ArenaViewModel,
+    purchaseLauncher: androidx.activity.result.ActivityResultLauncher<androidx.activity.result.IntentSenderRequest>
+) {
     var isSplashFinished by remember { mutableStateOf(false) }
 
     Crossfade(
@@ -89,7 +95,10 @@ fun ArenaApp(viewModel: ArenaViewModel) {
                 onSplashFinished = { isSplashFinished = true }
             )
         } else {
-            MainScreen(viewModel = viewModel)
+            MainScreen(
+                viewModel = viewModel,
+                purchaseLauncher = purchaseLauncher
+            )
         }
     }
 }
