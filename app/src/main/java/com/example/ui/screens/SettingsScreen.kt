@@ -1,4 +1,4 @@
-package com.example.ui.screens
+package com.arenaclash.game.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -41,8 +41,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.data.local.entity.GameSettingsEntity
-import com.example.ui.viewmodel.ArenaViewModel
+import com.arenaclash.game.data.local.entity.GameSettingsEntity
+import com.arenaclash.game.ui.viewmodel.ArenaViewModel
 
 @Composable
 fun SettingsScreen(
