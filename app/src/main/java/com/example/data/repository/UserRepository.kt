@@ -25,6 +25,10 @@ class UserRepository(
         return userDao.deductTickets(tickets) > 0
     }
 
+    suspend fun getProfileSnapshot(): UserProfileEntity? {
+        return userDao.getProfileSnapshot()
+    }
+
     suspend fun recordMatchResult(trophiesDelta: Int, isVictory: Boolean) {
         val victoryIncrement = if (isVictory) 1 else 0
         userDao.updateMatchOutcome(trophiesDelta, victoryIncrement)

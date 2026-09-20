@@ -3,10 +3,12 @@ package com.example.ads
 import android.app.Activity
 import android.content.Context
 import android.util.Log
+import android.view.ViewGroup
 import com.example.BuildConfig
 import ir.tapsell.plus.AdRequestCallback
 import ir.tapsell.plus.AdShowListener
 import ir.tapsell.plus.TapsellPlus
+import ir.tapsell.plus.TapsellPlusBannerType
 import ir.tapsell.plus.TapsellPlusInitListener
 import ir.tapsell.plus.model.AdNetworkError
 import ir.tapsell.plus.model.AdNetworks
@@ -30,7 +32,9 @@ class TapsellManager private constructor() {
 
     companion object {
         private const val TAG = "TapsellManager"
-        const val REWARDED_ZONE_ID = "arena_rewarded_video_zone"
+        const val REWARDED_ZONE_ID = "6aabb9d48c70901d2f6656ed"
+        const val BANNER_ZONE_ID = "6aabb9e98c70901d2f6656ee"
+        const val INTERSTITIAL_ZONE_ID = "6aac02bbdd01711161ca6efa"
 
         @Volatile
         private var INSTANCE: TapsellManager? = null
@@ -96,6 +100,77 @@ class TapsellManager private constructor() {
                 Log.e(TAG, "TapsellPlus initialization failed: $errMsg")
                 onInitialized?.invoke(false)
                 pendingInitAction = null
+            }
+        })
+    }
+
+    fun requestAndShowRewardedVideo(
+        activity: Activity,
+        zoneId: String = REWARDED_ZONE_ID,
+        rewardCoins: Int = 150,
+        onRewarded: (Int) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val currentState = _adState.value
+        if (currentState is AdState.Ready) {
+            showRewardedVideo(
+                activity = activity,
+                responseId = currentState.responseId,
+                rewardCoins = rewardCoins,
+                onRewarded = onRewarded,
+                onError = onError
+            )
+            return
+        }
+
+        if (!isInitialized) {
+            val appKey = tapsellAppKey
+            if (appKey.isBlank()) {
+                val err = "کلید تپسل در فایل تنظیمات برنامه پیکربندی نشده است."
+                _adState.value = AdState.Error(err)
+                onError(err)
+                return
+            }
+            initialize(activity) { success ->
+                if (success) {
+                    requestAndShowRewardedVideo(activity, zoneId, rewardCoins, onRewarded, onError)
+                } else {
+                    val err = "خطا در اتصال و راه‌اندازی سرویس تبلیغات تپسل."
+                    _adState.value = AdState.Error(err)
+                    onError(err)
+                }
+            }
+            return
+        }
+
+        if (!isRequestInProgress.compareAndSet(false, true)) {
+            Log.w(TAG, "Ad request already in progress. Skipping.")
+            return
+        }
+
+        _adState.value = AdState.Loading
+
+        TapsellPlus.requestRewardedVideoAd(activity, zoneId, object : AdRequestCallback() {
+            override fun response(tapsellPlusAdModel: TapsellPlusAdModel) {
+                isRequestInProgress.set(false)
+                val responseId = tapsellPlusAdModel.responseId
+                Log.d(TAG, "Rewarded ad ready: $responseId. Showing ad now.")
+                _adState.value = AdState.Ready(responseId)
+                showRewardedVideo(
+                    activity = activity,
+                    responseId = responseId,
+                    rewardCoins = rewardCoins,
+                    onRewarded = onRewarded,
+                    onError = onError
+                )
+            }
+
+            override fun error(errorMessage: String?) {
+                isRequestInProgress.set(false)
+                val msg = errorMessage ?: "خطا در دریافت ویدیوی جایزه‌دار تپسل"
+                Log.e(TAG, "Error requesting rewarded ad: $msg")
+                _adState.value = AdState.Error(msg)
+                onError(msg)
             }
         })
     }
@@ -178,5 +253,130 @@ class TapsellManager private constructor() {
                 onError(errorMsg)
             }
         })
+    }
+
+    fun requestAndShowInterstitial(
+        activity: Activity,
+        zoneId: String = INTERSTITIAL_ZONE_ID,
+        onClosed: (() -> Unit)? = null,
+        onError: ((String) -> Unit)? = null
+    ) {
+        if (!isInitialized) {
+            val appKey = tapsellAppKey
+            if (appKey.isBlank()) {
+                onError?.invoke("کلید تپسل در فایل تنظیمات برنامه پیکربندی نشده است.")
+                return
+            }
+            initialize(activity) { success ->
+                if (success) {
+                    requestAndShowInterstitial(activity, zoneId, onClosed, onError)
+                } else {
+                    onError?.invoke("مقداردهی اولیه سرویس تپسل ناموفق بود.")
+                }
+            }
+            return
+        }
+
+        TapsellPlus.requestInterstitialAd(
+            activity,
+            zoneId,
+            object : AdRequestCallback() {
+                override fun response(tapsellPlusAdModel: TapsellPlusAdModel) {
+                    val responseId = tapsellPlusAdModel.responseId
+                    TapsellPlus.showInterstitialAd(
+                        activity,
+                        responseId,
+                        object : AdShowListener() {
+                            override fun onOpened(tapsellPlusAdModel: TapsellPlusAdModel) {
+                                Log.d(TAG, "Interstitial ad opened: ${tapsellPlusAdModel.responseId}")
+                            }
+
+                            override fun onClosed(tapsellPlusAdModel: TapsellPlusAdModel) {
+                                Log.d(TAG, "Interstitial ad closed: ${tapsellPlusAdModel.responseId}")
+                                onClosed?.invoke()
+                            }
+
+                            override fun onError(tapsellPlusErrorModel: TapsellPlusErrorModel) {
+                                val err = tapsellPlusErrorModel.errorMessage ?: "خطا در نمایش ویدیوی فوری"
+                                Log.e(TAG, "Interstitial show error: $err")
+                                onError?.invoke(err)
+                            }
+                        }
+                    )
+                }
+
+                override fun error(errorMessage: String?) {
+                    val err = errorMessage ?: "خطا در دریافت ویدیوی فوری تپسل"
+                    Log.e(TAG, "Interstitial request error: $err")
+                    onError?.invoke(err)
+                }
+            }
+        )
+    }
+
+    fun requestAndShowBanner(
+        activity: Activity,
+        container: ViewGroup,
+        zoneId: String = BANNER_ZONE_ID,
+        onShown: (() -> Unit)? = null,
+        onError: ((String) -> Unit)? = null
+    ) {
+        if (!isInitialized) {
+            val appKey = tapsellAppKey
+            if (appKey.isBlank()) {
+                onError?.invoke("کلید تپسل در فایل تنظیمات برنامه پیکربندی نشده است.")
+                return
+            }
+            initialize(activity) { success ->
+                if (success) {
+                    requestAndShowBanner(activity, container, zoneId, onShown, onError)
+                } else {
+                    onError?.invoke("مقداردهی اولیه سرویس تپسل ناموفق بود.")
+                }
+            }
+            return
+        }
+
+        TapsellPlus.requestStandardBannerAd(
+            activity,
+            zoneId,
+            TapsellPlusBannerType.BANNER_320x50,
+            object : AdRequestCallback() {
+                override fun response(tapsellPlusAdModel: TapsellPlusAdModel) {
+                    val responseId = tapsellPlusAdModel.responseId
+                    TapsellPlus.showStandardBannerAd(
+                        activity,
+                        responseId,
+                        container,
+                        object : AdShowListener() {
+                            override fun onOpened(tapsellPlusAdModel: TapsellPlusAdModel) {
+                                Log.d(TAG, "Standard Banner opened: $responseId")
+                                onShown?.invoke()
+                            }
+
+                            override fun onError(tapsellPlusErrorModel: TapsellPlusErrorModel) {
+                                val err = tapsellPlusErrorModel.errorMessage ?: "خطا در نمایش بنر تبلیغاتی"
+                                Log.e(TAG, "Standard Banner show error: $err")
+                                onError?.invoke(err)
+                            }
+                        }
+                    )
+                }
+
+                override fun error(errorMessage: String?) {
+                    val err = errorMessage ?: "خطا در دریافت بنر تبلیغاتی تپسل"
+                    Log.e(TAG, "Standard Banner request error: $err")
+                    onError?.invoke(err)
+                }
+            }
+        )
+    }
+
+    fun destroyBanner(activity: Activity, container: ViewGroup, responseId: String = "") {
+        try {
+            TapsellPlus.destroyStandardBanner(activity, responseId, container)
+        } catch (e: Exception) {
+            Log.w(TAG, "Error destroying standard banner: ${e.message}")
+        }
     }
 }

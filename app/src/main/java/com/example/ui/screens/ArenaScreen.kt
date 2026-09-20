@@ -45,6 +45,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.components.TapsellBanner
 import com.example.ui.viewmodel.ArenaViewModel
 
 data class ArenaStage(
@@ -405,6 +406,11 @@ fun ArenaScreen(
                     }
                 }
             }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(6.dp))
+            TapsellBanner()
         }
     }
 }

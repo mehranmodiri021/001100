@@ -32,7 +32,7 @@ import kotlinx.coroutines.launch
         MatchHistoryEntity::class,
         GameSettingsEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -88,12 +88,13 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                 )
 
+                // Clean initialization: All challenges start strictly from 0 progress
                 database.challengeDao().insertAll(
                     listOf(
-                        ChallengeItemEntity("ch_1", "شکارچی آرنا", "در ۳ نبرد آرنا پیروز شوید", 3, 1, 300, 150),
-                        ChallengeItemEntity("ch_2", "مبارز خستگی‌ناپذیر", "در ۵ نبرد شرکت کنید", 5, 3, 200, 100),
-                        ChallengeItemEntity("ch_3", "استاد ضربات مهلک", "۱۰ ضربه سنگین در آرنا فرود آورید", 10, 6, 400, 250),
-                        ChallengeItemEntity("ch_4", "فاتح طلایی", "به کاپ ۲۰۰۰ برسید", 2000, 1850, 1000, 500)
+                        ChallengeItemEntity("ch_1", "شکارچی آرنا", "در ۳ نبرد آرنا پیروز شوید", 3, 0, 300, 150),
+                        ChallengeItemEntity("ch_2", "مبارز خستگی‌ناپذیر", "در ۵ نبرد شرکت کنید", 5, 0, 200, 100),
+                        ChallengeItemEntity("ch_3", "استاد ضربات مهلک", "در ۱۰ نبرد آرنا شرکت کنید", 10, 0, 400, 250),
+                        ChallengeItemEntity("ch_4", "فاتح طلایی", "به کاپ ۲۰۰۰ برسید", 2000, 0, 1000, 500)
                     )
                 )
 
@@ -103,22 +104,14 @@ abstract class AppDatabase : RoomDatabase() {
                         LeaderboardEntryEntity(2, "رستم دستان", 2980, 120, isVip = true),
                         LeaderboardEntryEntity(3, "تندر سیاه", 2740, 98, isVip = false),
                         LeaderboardEntryEntity(4, "ققنوس آرنا", 2420, 85, isVip = true),
-                        LeaderboardEntryEntity(5, "جنگجوی آرنا (شما)", 1850, 29, isVip = false, isCurrentUser = true),
-                        LeaderboardEntryEntity(6, "شبح صحرا", 1680, 44, isVip = false),
-                        LeaderboardEntryEntity(7, "سردار آتش", 1520, 38, isVip = false)
+                        LeaderboardEntryEntity(5, "سردار آتش", 1850, 44, isVip = false),
+                        LeaderboardEntryEntity(6, "شبح صحرا", 1680, 38, isVip = false),
+                        LeaderboardEntryEntity(7, "گرگ زاگرس", 1420, 31, isVip = false),
+                        LeaderboardEntryEntity(8, "جنگجوی آرنا (شما)", 0, 0, isVip = false, isCurrentUser = true)
                     )
                 )
 
-                database.matchHistoryDao().insertMatch(
-                    MatchHistoryEntity(
-                        opponentName = "سردار آتش",
-                        isVictory = true,
-                        arenaName = "میدان سرخ",
-                        coinsDelta = 80,
-                        trophiesDelta = 25,
-                        timestamp = System.currentTimeMillis() - 1000 * 60 * 45
-                    )
-                )
+                // A clean installation must not have pre-seeded fake match history
             }
         }
     }

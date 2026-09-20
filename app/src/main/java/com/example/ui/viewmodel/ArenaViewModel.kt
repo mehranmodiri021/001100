@@ -176,30 +176,41 @@ class ArenaViewModel(
     }
 
     fun watchRewardedAd(activity: Activity) {
-        val currentState = adState.value
-        if (currentState is AdState.Ready) {
-            tapsellManager.showRewardedVideo(
-                activity = activity,
-                responseId = currentState.responseId,
-                rewardCoins = 150,
-                onRewarded = { coins ->
-                    viewModelScope.launch {
-                        userRepository.addCurrency(coins, 0)
-                        _uiEvents.emit(UiEvent.ShowSnackbar("تبریک! $coins سکه به موجودی شما افزوده شد."))
-                    }
-                },
-                onError = { error ->
-                    viewModelScope.launch {
-                        _uiEvents.emit(UiEvent.ShowSnackbar("خطا در نمایش ویدیو: $error"))
-                    }
+        tapsellManager.requestAndShowRewardedVideo(
+            activity = activity,
+            rewardCoins = 150,
+            onRewarded = { coins ->
+                viewModelScope.launch {
+                    userRepository.addCurrency(coins, 0)
+                    _uiEvents.emit(UiEvent.ShowSnackbar("تبریک! $coins سکه به موجودی شما افزوده شد."))
                 }
-            )
-        } else {
-            tapsellManager.requestRewardedVideo(activity)
-            viewModelScope.launch {
-                _uiEvents.emit(UiEvent.ShowSnackbar("در حال آماده‌سازی ویدیوی جایزه‌دار تپسل..."))
+            },
+            onError = { error ->
+                viewModelScope.launch {
+                    _uiEvents.emit(UiEvent.ShowSnackbar("خطای تبلیغات: $error"))
+                }
             }
+        )
+    }
+
+    fun showInterstitialAd(activity: Activity) {
+        viewModelScope.launch {
+            _uiEvents.emit(UiEvent.ShowSnackbar("در حال آماده‌سازی ویدیوی فوری..."))
         }
+        tapsellManager.requestAndShowInterstitial(
+            activity = activity,
+            onClosed = {
+                viewModelScope.launch {
+                    userRepository.addCurrency(50, 0)
+                    _uiEvents.emit(UiEvent.ShowSnackbar("پاداش تبلیغ فوری دریافت شد: +۵۰ سکه طلا"))
+                }
+            },
+            onError = { error ->
+                viewModelScope.launch {
+                    _uiEvents.emit(UiEvent.ShowSnackbar("خطا در پخش ویدیو فوری: $error"))
+                }
+            }
+        )
     }
 
     fun startBattle(arenaName: String, ticketCost: Int) {
@@ -212,9 +223,9 @@ class ArenaViewModel(
 
             val opponents = listOf("سردار آتش", "تندر سیاه", "گرگ صحرا", "عقاب البرز", "تکاور زاگرس")
             val opponent = opponents.random()
-            val isVictory = (1..100).random() <= 70
+            val isVictory = (1..100).random() <= 65
 
-            val coinsEarned = if (isVictory) 120 else 20
+            val coinsEarned = if (isVictory) 120 else 25
             val trophiesDelta = if (isVictory) 30 else -15
 
             userRepository.addCurrency(coinsEarned, 0)
@@ -229,6 +240,22 @@ class ArenaViewModel(
                     trophiesDelta = trophiesDelta
                 )
             )
+
+            // Update real challenge progress based on actual profile statistics
+            val updatedProfile = userRepository.getProfileSnapshot()
+            if (updatedProfile != null) {
+                val ch1 = updatedProfile.victories.coerceAtMost(3)
+                gameRepository.updateChallengeProgress("ch_1", ch1, ch1 >= 3)
+
+                val ch2 = updatedProfile.totalMatches.coerceAtMost(5)
+                gameRepository.updateChallengeProgress("ch_2", ch2, ch2 >= 5)
+
+                val ch3 = updatedProfile.totalMatches.coerceAtMost(10)
+                gameRepository.updateChallengeProgress("ch_3", ch3, ch3 >= 10)
+
+                val ch4 = updatedProfile.trophies.coerceAtMost(2000)
+                gameRepository.updateChallengeProgress("ch_4", ch4, ch4 >= 2000)
+            }
 
             _uiEvents.emit(UiEvent.BattleFinished(isVictory, coinsEarned, trophiesDelta))
         }

@@ -4,20 +4,24 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -46,9 +50,9 @@ fun SplashScreen(
     LaunchedEffect(Unit) {
         progress.animateTo(
             targetValue = 1f,
-            animationSpec = tween(durationMillis = 3000, easing = LinearEasing)
+            animationSpec = tween(durationMillis = 3200, easing = LinearEasing)
         )
-        delay(100)
+        delay(150)
         onSplashFinished()
     }
 
@@ -73,28 +77,35 @@ fun SplashScreen(
         ) {
             Surface(
                 modifier = Modifier
-                    .size(100.dp)
-                    .clip(CircleShape),
+                    .size(110.dp)
+                    .clip(CircleShape)
+                    .border(3.dp, Color(0xFFFBBF24), CircleShape),
                 color = Color(0xFFF59E0B),
-                shadowElevation = 12.dp
+                shadowElevation = 16.dp
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Default.FlashOn,
-                        contentDescription = "لوگوی بازی آرنا کلش",
-                        tint = Color.Black,
-                        modifier = Modifier.size(64.dp)
+                        imageVector = Icons.Default.Shield,
+                        contentDescription = "نشان آرنا کلش",
+                        tint = Color(0xFF0F172A),
+                        modifier = Modifier.size(68.dp)
+                    )
+                    Icon(
+                        imageVector = Icons.Default.Stars,
+                        contentDescription = null,
+                        tint = Color(0xFFFEF3C7),
+                        modifier = Modifier.size(30.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(26.dp))
 
             Text(
-                text = "Arena Clash",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 2.sp
+                text = "آرنا کلش",
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 32.sp
                 ),
                 color = Color(0xFFF59E0B)
             )
@@ -102,23 +113,24 @@ fun SplashScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "آرنا کلش",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold
+                text = "Arena Clash",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp
                 ),
                 color = Color.White
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = "نبردهای حماسی آنلاین و جوایز کافه‌بازار",
+                text = "میدان حماسی گلادیاتورها و نبردهای آنلاین",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFF94A3B8),
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
             LinearProgressIndicator(
                 progress = { progress.value },
@@ -130,10 +142,10 @@ fun SplashScreen(
                 trackColor = Color(0xFF334155)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = "در حال بارگذاری میدان‌های نبرد...",
+                text = "در حال آماده‌سازی نبردهای آرنا...",
                 style = MaterialTheme.typography.labelSmall,
                 color = Color(0xFF64748B)
             )
@@ -142,23 +154,34 @@ fun SplashScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 36.dp),
+                .navigationBarsPadding()
+                .padding(bottom = 24.dp),
             contentAlignment = Alignment.BottomCenter
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "سازنده:",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF64748B)
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "سیدحمید موسوی زاده",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = Color(0xFFE2E8F0)
-                )
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = Color(0xFF1E293B).copy(alpha = 0.85f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155)),
+                modifier = Modifier.padding(horizontal = 24.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "سازنده و توسعه‌دهنده:",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFF94A3B8)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "سیدحمید موسوی زاده",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = Color(0xFFFBBF24)
+                    )
+                }
             }
         }
     }

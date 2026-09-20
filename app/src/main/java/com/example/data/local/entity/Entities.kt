@@ -7,14 +7,14 @@ import androidx.room.PrimaryKey
 data class UserProfileEntity(
     @PrimaryKey val id: Int = 1,
     val username: String = "جنگجوی آرنا",
-    val level: Int = 5,
-    val xp: Int = 1450,
-    val xpToNextLevel: Int = 2000,
-    val coins: Int = 2400,
-    val tickets: Int = 15,
-    val trophies: Int = 1850,
-    val totalMatches: Int = 42,
-    val victories: Int = 29
+    val level: Int = 1,
+    val xp: Int = 0,
+    val xpToNextLevel: Int = 500,
+    val coins: Int = 250,
+    val tickets: Int = 5,
+    val trophies: Int = 0,
+    val totalMatches: Int = 0,
+    val victories: Int = 0
 )
 
 @Entity(tableName = "vip_state")

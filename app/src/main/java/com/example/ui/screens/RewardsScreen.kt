@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.ads.AdState
+import com.example.ui.components.TapsellBanner
 import com.example.ui.viewmodel.ArenaViewModel
 
 @Composable
@@ -150,10 +151,98 @@ fun RewardsScreen(
                                 Text("در حال آماده‌سازی...")
                             } else {
                                 Text(
-                                    text = if (adState is AdState.Ready) "پخش ویدیو" else "دریافت ویدیو",
+                                    text = "پخش ویدیو",
                                     fontWeight = FontWeight.Bold
                                 )
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            // Tapsell Interstitial / Instant Video Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("interstitial_ad_card"),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFF38BDF8).copy(alpha = 0.2f),
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayCircle,
+                                contentDescription = null,
+                                tint = Color(0xFF38BDF8),
+                                modifier = Modifier
+                                    .padding(10.dp)
+                                    .size(28.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(14.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "ویدیوی فوری تپسل (بین‌صفحه‌ای)",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = Color.White
+                            )
+                            Text(
+                                text = "تماشای آگهی فوری و دریافت ۵۰ سکه طلا",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF94A3B8)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.MonetizationOn,
+                                contentDescription = null,
+                                tint = Color(0xFF38BDF8),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "+۵۰ سکه رایگان",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = Color(0xFF7DD3FC)
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                activity?.let { viewModel.showInterstitialAd(it) }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF38BDF8),
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.testTag("btn_watch_interstitial_ad")
+                        ) {
+                            Text(
+                                text = "پخش ویدیوی فوری",
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
@@ -262,6 +351,11 @@ fun RewardsScreen(
                     }
                 }
             }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(8.dp))
+            TapsellBanner()
         }
     }
 }

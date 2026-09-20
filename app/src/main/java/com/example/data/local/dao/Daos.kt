@@ -19,6 +19,9 @@ interface UserDao {
     @Query("SELECT * FROM user_profile WHERE id = 1")
     fun getUserProfile(): Flow<UserProfileEntity?>
 
+    @Query("SELECT * FROM user_profile WHERE id = 1")
+    suspend fun getProfileSnapshot(): UserProfileEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdateProfile(profile: UserProfileEntity)
 
@@ -31,7 +34,7 @@ interface UserDao {
     @Query("UPDATE user_profile SET tickets = tickets - :tickets WHERE id = 1 AND tickets >= :tickets")
     suspend fun deductTickets(tickets: Int): Int
 
-    @Query("UPDATE user_profile SET trophies = trophies + :trophiesDelta, totalMatches = totalMatches + 1, victories = victories + :victoryIncrement WHERE id = 1")
+    @Query("UPDATE user_profile SET trophies = CASE WHEN (trophies + :trophiesDelta) < 0 THEN 0 ELSE (trophies + :trophiesDelta) END, totalMatches = totalMatches + 1, victories = victories + :victoryIncrement WHERE id = 1")
     suspend fun updateMatchOutcome(trophiesDelta: Int, victoryIncrement: Int)
 }
 

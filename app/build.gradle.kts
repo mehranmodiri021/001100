@@ -28,37 +28,24 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            val keystorePath = System.getenv("KEYSTORE_PATH")
-            val storePasswordEnv = System.getenv("STORE_PASSWORD")
-            val keyAliasEnv = System.getenv("KEY_ALIAS")
-            val keyPasswordEnv = System.getenv("KEY_PASSWORD")
+        val keystorePath = System.getenv("KEYSTORE_PATH")
+        val storePasswordEnv = System.getenv("STORE_PASSWORD")
+        val keyAliasEnv = System.getenv("KEY_ALIAS")
+        val keyPasswordEnv = System.getenv("KEY_PASSWORD")
 
-            if (
-                keystorePath.isNullOrBlank() ||
-                storePasswordEnv.isNullOrBlank() ||
-                keyAliasEnv.isNullOrBlank() ||
-                keyPasswordEnv.isNullOrBlank()
-            ) {
-                throw GradleException(
-                    "Release signing configuration is incomplete. " +
-                        "KEYSTORE_PATH, STORE_PASSWORD, KEY_ALIAS and KEY_PASSWORD " +
-                        "must be provided."
-                )
+        if (
+            !keystorePath.isNullOrBlank() &&
+            !storePasswordEnv.isNullOrBlank() &&
+            !keyAliasEnv.isNullOrBlank() &&
+            !keyPasswordEnv.isNullOrBlank() &&
+            file(keystorePath).exists()
+        ) {
+            create("release") {
+                storeFile = file(keystorePath)
+                storePassword = storePasswordEnv
+                keyAlias = keyAliasEnv
+                keyPassword = keyPasswordEnv
             }
-
-            val keystoreFile = file(keystorePath)
-
-            if (!keystoreFile.exists()) {
-                throw GradleException(
-                    "Release keystore not found: ${keystoreFile.absolutePath}"
-                )
-            }
-
-            storeFile = keystoreFile
-            storePassword = storePasswordEnv
-            keyAlias = keyAliasEnv
-            keyPassword = keyPasswordEnv
         }
 
         create("debugConfig") {
@@ -79,7 +66,9 @@ android {
                 "proguard-rules.pro"
             )
 
-            signingConfig = signingConfigs.getByName("release")
+            signingConfigs.findByName("release")?.let {
+                signingConfig = it
+            }
         }
 
         debug {
