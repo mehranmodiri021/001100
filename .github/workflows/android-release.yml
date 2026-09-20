@@ -25,6 +25,22 @@ jobs:
       - name: Grant Execute Permission for Gradle
         run: chmod +x gradlew
 
+      # ═══════════════════════════════════════════════════════════════
+      # مرحله ۱: ساخت فایل local.properties از GitHub Secrets
+      # ═══════════════════════════════════════════════════════════════
+      # این مرحله کلیدهای حساس (تپسل و کافه‌بازار) رو از GitHub Secrets
+      # می‌خونه و تو فایل local.properties می‌ریزه تا پلاگین secrets
+      # بتونه ازشون استفاده کنه و در BuildConfig قرار بگیرن.
+      - name: Create local.properties from secrets
+        run: |
+          echo "TAPSELL_KEY=${{ secrets.TAPSELL_KEY }}" > local.properties
+          echo "BAZAAR_PUBLIC_KEY=${{ secrets.BAZAAR_PUBLIC_KEY }}" >> local.properties
+          echo "local.properties created:"
+          wc -l local.properties
+
+      # ═══════════════════════════════════════════════════════════════
+      # مرحله ۲: اعتبارسنجی Secrets امضا
+      # ═══════════════════════════════════════════════════════════════
       - name: Validate Release Signing Secrets
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -33,97 +49,55 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           set -e
-
-          test -n "$KEYSTORE_BASE64" || {
-            echo "::error::KEYSTORE_BASE64 GitHub Secret is missing."
-            exit 1
-          }
-
-          test -n "$STORE_PASSWORD" || {
-            echo "::error::STORE_PASSWORD GitHub Secret is missing."
-            exit 1
-          }
-
-          test -n "$KEY_ALIAS" || {
-            echo "::error::KEY_ALIAS GitHub Secret is missing."
-            exit 1
-          }
-
-          test -n "$KEY_PASSWORD" || {
-            echo "::error::KEY_PASSWORD GitHub Secret is missing."
-            exit 1
-          }
-
+          test -n "$KEYSTORE_BASE64" || { echo "::error::KEYSTORE_BASE64 missing"; exit 1; }
+          test -n "$STORE_PASSWORD" || { echo "::error::STORE_PASSWORD missing"; exit 1; }
+          test -n "$KEY_ALIAS" || { echo "::error::KEY_ALIAS missing"; exit 1; }
+          test -n "$KEY_PASSWORD" || { echo "::error::KEY_PASSWORD missing"; exit 1; }
           echo "Release signing secrets are configured."
 
+      # ═══════════════════════════════════════════════════════════════
+      # مرحله ۳: اجرای تست‌های واحد
+      # ═══════════════════════════════════════════════════════════════
+      - name: Run Unit Tests
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
+
+      # ═══════════════════════════════════════════════════════════════
+      # مرحله ۴: بازسازی فایل Keystore از Base64
+      # ═══════════════════════════════════════════════════════════════
       - name: Restore Release Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           set -e
-
           echo "$KEYSTORE_BASE64" | base64 --decode > release-keystore.jks
-
           test -s release-keystore.jks
-
           echo "Release keystore restored successfully."
 
+      # ═══════════════════════════════════════════════════════════════
+      # مرحله ۵: ساخت APK امضاشده
+      # ═══════════════════════════════════════════════════════════════
       - name: Assemble Release APK
         env:
           KEYSTORE_PATH: ${{ github.workspace }}/release-keystore.jks
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          BAZAAR_PUBLIC_KEY: ${{ secrets.BAZAAR_PUBLIC_KEY }}
-          TAPSELL_KEY: ${{ secrets.TAPSELL_KEY }}
-        run: |
-          ./gradlew :app:assembleRelease --stacktrace
+        run: ./gradlew :app:assembleRelease --stacktrace
 
+      # ═══════════════════════════════════════════════════════════════
+      # مرحله ۶: ساخت AAB (برای Google Play، اختیاری)
+      # ═══════════════════════════════════════════════════════════════
       - name: Bundle Release AAB
         env:
           KEYSTORE_PATH: ${{ github.workspace }}/release-keystore.jks
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          BAZAAR_PUBLIC_KEY: ${{ secrets.BAZAAR_PUBLIC_KEY }}
-          TAPSELL_KEY: ${{ secrets.TAPSELL_KEY }}
-        run: |
-          ./gradlew :app:bundleRelease --stacktrace
+        run: ./gradlew :app:bundleRelease --stacktrace
 
-      - name: Verify Release APK
-        run: |
-          set -e
-
-          APK=$(find app/build/outputs/apk/release \
-            -maxdepth 1 \
-            -type f \
-            -name "*.apk" \
-            -print -quit)
-
-          test -n "$APK"
-
-          echo "Release APK:"
-          echo "$APK"
-
-          ls -lh "$APK"
-
-      - name: Verify Release AAB
-        run: |
-          set -e
-
-          AAB=$(find app/build/outputs/bundle/release \
-            -maxdepth 1 \
-            -type f \
-            -name "*.aab" \
-            -print -quit)
-
-          test -n "$AAB"
-
-          echo "Release AAB:"
-          echo "$AAB"
-
-          ls -lh "$AAB"
-
+      # ═══════════════════════════════════════════════════════════════
+      # مرحله ۷: آپلود APK
+      # ═══════════════════════════════════════════════════════════════
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
@@ -131,6 +105,9 @@ jobs:
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
 
+      # ═══════════════════════════════════════════════════════════════
+      # مرحله ۸: آپلود AAB
+      # ═══════════════════════════════════════════════════════════════
       - name: Upload Release AAB
         uses: actions/upload-artifact@v4
         with:
@@ -138,7 +115,11 @@ jobs:
           path: app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
 
-      - name: Cleanup Release Keystore
+      # ═══════════════════════════════════════════════════════════════
+      # مرحله ۹: پاکسازی فایل‌های حساس
+      # ═══════════════════════════════════════════════════════════════
+      - name: Cleanup Sensitive Files
         if: always()
         run: |
           rm -f release-keystore.jks
+          rm -f local.properties
