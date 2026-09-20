@@ -1,15 +1,15 @@
-package com.example.data.repository
+package com.arenaclash.game.data.repository
 
-import com.example.data.local.dao.ChallengeDao
-import com.example.data.local.dao.LeaderboardDao
-import com.example.data.local.dao.MatchHistoryDao
-import com.example.data.local.dao.RewardDao
-import com.example.data.local.dao.SettingsDao
-import com.example.data.local.entity.ChallengeItemEntity
-import com.example.data.local.entity.GameSettingsEntity
-import com.example.data.local.entity.LeaderboardEntryEntity
-import com.example.data.local.entity.MatchHistoryEntity
-import com.example.data.local.entity.RewardItemEntity
+import com.arenaclash.game.data.local.dao.ChallengeDao
+import com.arenaclash.game.data.local.dao.LeaderboardDao
+import com.arenaclash.game.data.local.dao.MatchHistoryDao
+import com.arenaclash.game.data.local.dao.RewardDao
+import com.arenaclash.game.data.local.dao.SettingsDao
+import com.arenaclash.game.data.local.entity.ChallengeItemEntity
+import com.arenaclash.game.data.local.entity.GameSettingsEntity
+import com.arenaclash.game.data.local.entity.LeaderboardEntryEntity
+import com.arenaclash.game.data.local.entity.MatchHistoryEntity
+import com.arenaclash.game.data.local.entity.RewardItemEntity
 import kotlinx.coroutines.flow.Flow
 
 class GameRepository(
