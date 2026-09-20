@@ -1,4 +1,4 @@
-package com.example.ui.screens
+package com.arenaclash.game.ui.screens
 
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
@@ -45,8 +45,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.billing.BazaarConfig
-import com.example.ui.viewmodel.ArenaViewModel
+import com.arenaclash.game.billing.BazaarConfig
+import com.arenaclash.game.ui.viewmodel.ArenaViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
