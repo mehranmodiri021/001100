@@ -1,8 +1,10 @@
-package com.example.billing
+package com.arenaclash.game.billing
 
-import com.example.BuildConfig
+import com.arenaclash.game.BuildConfig
 
 object BazaarConfig {
+    // ─── شناسه محصولات (SKU) در کافه‌بازار ───
+    // ⚠️ مهم: این شناسه‌ها باید دقیقاً با آنچه در پنل کافه‌بازار تعریف شده یکی باشند
     const val PRODUCT_VIP_MONTHLY = "challenge_arena_vip_monthly"
     const val PRODUCT_VIP_YEARLY = "challenge_arena_vip_yearly"
     const val PRODUCT_COINS_1000 = "challenge_arena_coins_1000"
@@ -17,10 +19,11 @@ object BazaarConfig {
         PRODUCT_TICKETS_10
     )
 
+    // کلید عمومی RSA کافه‌بازار از BuildConfig خوانده می‌شود
+    // (تزریق شده از .env توسط secrets plugin)
     val bazaarPublicKey: String
         get() = try {
-            val field = BuildConfig::class.java.getField("BAZAAR_PUBLIC_KEY")
-            val key = (field.get(null) as? String)?.trim().orEmpty()
+            val key = BuildConfig.BAZAAR_PUBLIC_KEY.trim()
             if (key == "DEFAULT_BAZAAR_PUBLIC_KEY" || key == "YOUR_BAZAAR_PUBLIC_KEY") "" else key
         } catch (_: Exception) {
             ""
