@@ -28,23 +28,12 @@ sealed class AdState {
     data class Error(val message: String) : AdState()
 }
 
-class TapsellManager private constructor() {
+object TapsellManager {
 
-    companion object {
-        private const val TAG = "TapsellManager"
-        const val REWARDED_ZONE_ID = "6aabb9d48c70901d2f6656ed"
-        const val BANNER_ZONE_ID = "6aabb9e98c70901d2f6656ee"
-        const val INTERSTITIAL_ZONE_ID = "6aac02bbdd01711161ca6efa"
-
-        @Volatile
-        private var INSTANCE: TapsellManager? = null
-
-        fun getInstance(): TapsellManager {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: TapsellManager().also { INSTANCE = it }
-            }
-        }
-    }
+    private const val TAG = "TapsellManager"
+    const val REWARDED_ZONE_ID = "6aabb9d48c70901d2f6656ed"
+    const val BANNER_ZONE_ID = "6aabb9e98c70901d2f6656ee"
+    const val INTERSTITIAL_ZONE_ID = "6aac02bbdd01711161ca6efa"
 
     private var isInitialized = false
     private val isInitializing = AtomicBoolean(false)
