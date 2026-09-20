@@ -1,4 +1,4 @@
-package com.example.billing.security
+package com.arenaclash.game.billing.security
 
 import android.util.Base64
 import android.util.Log
