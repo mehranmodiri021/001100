@@ -163,6 +163,10 @@ class ArenaViewModel(
         }
     }
 
+    /**
+     * صندوق‌های معمولی (روزانه و برنزی) — بدون تبلیغ
+     * کاربر مستقیم جایزه رو می‌گیره.
+     */
     fun claimDailyReward(reward: RewardItemEntity) {
         viewModelScope.launch {
             if (!reward.isAvailable) {
@@ -172,6 +176,38 @@ class ArenaViewModel(
             gameRepository.claimReward(reward.id)
             userRepository.addCurrency(reward.rewardCoins, reward.rewardTickets)
             _uiEvents.emit(UiEvent.ShowSnackbar("هدیه دریافت شد: +${reward.rewardCoins} سکه، +${reward.rewardTickets} بلیط"))
+        }
+    }
+
+    /**
+     * صندوق نقره‌ای (silver_chest) — با تبلیغ جایزه‌دار
+     * کاربر باید ویدیو ببینه تا جایزه بگیره.
+     */
+    fun claimVideoChestReward(activity: Activity, reward: RewardItemEntity) {
+        viewModelScope.launch {
+            if (!reward.isAvailable) {
+                _uiEvents.emit(UiEvent.ShowSnackbar("این هدیه هنوز آماده دریافت نیست."))
+                return@launch
+            }
+
+            _uiEvents.emit(UiEvent.ShowSnackbar("برای دریافت جایزه، ویدیو را کامل تماشا کنید..."))
+
+            TapsellManager.requestAndShowRewardedVideo(
+                activity = activity,
+                rewardCoins = reward.rewardCoins,
+                onRewarded = { coins ->
+                    viewModelScope.launch {
+                        gameRepository.claimReward(reward.id)
+                        userRepository.addCurrency(coins, reward.rewardTickets)
+                        _uiEvents.emit(UiEvent.ShowSnackbar("تبریک! +$coins سکه به موجودی شما اضافه شد."))
+                    }
+                },
+                onError = { error ->
+                    viewModelScope.launch {
+                        _uiEvents.emit(UiEvent.ShowSnackbar("خطا در نمایش تبلیغ: $error"))
+                    }
+                }
+            )
         }
     }
 
