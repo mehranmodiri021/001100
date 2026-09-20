@@ -1,4 +1,4 @@
-package com.example.billing
+package com.arenaclash.game.billing
 
 import android.app.Activity
 import android.app.PendingIntent
@@ -13,7 +13,7 @@ import android.util.Log
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
-import com.example.billing.security.SecurityHelper
+import com.arenaclash.game.billing.security.SecurityHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
