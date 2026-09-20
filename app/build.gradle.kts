@@ -1,5 +1,3 @@
-import org.gradle.api.GradleException
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -9,13 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example"
+    // namespace با applicationId یکسان شد (قبلاً com.example بود که اشتباه است)
+    namespace = "com.aistudio.challengearena.vxpqz"
 
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    // سینتکس استاندارد compileSdk
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.aistudio.challengearena.vxpqz"
@@ -28,6 +24,7 @@ android {
     }
 
     signingConfigs {
+        // بخش release فقط وقتی ساخته می‌شود که همه متغیرهای محیطی موجود باشند
         val keystorePath = System.getenv("KEYSTORE_PATH")
         val storePasswordEnv = System.getenv("STORE_PASSWORD")
         val keyAliasEnv = System.getenv("KEY_ALIAS")
@@ -47,19 +44,13 @@ android {
                 keyPassword = keyPasswordEnv
             }
         }
-
-        create("debugConfig") {
-            storeFile = file("${rootDir}/debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
-        }
     }
 
     buildTypes {
         release {
-            isCrunchPngs = false
-            isMinifyEnabled = false
+            isCrunchPngs = true
+            isMinifyEnabled = true
+            isShrinkResources = true
 
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -72,7 +63,8 @@ android {
         }
 
         debug {
-            signingConfig = signingConfigs.getByName("debugConfig")
+            // استفاده از signing config پیش‌فرض دیباگ اندروید
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
@@ -98,6 +90,7 @@ android {
     }
 }
 
+// پیکربندی پلاگین Secrets برای خواندن کلیدها از فایل .env
 secrets {
     propertiesFileName = ".env"
     defaultPropertiesFileName = ".env.example"
@@ -105,10 +98,9 @@ secrets {
 }
 
 dependencies {
+    // ─── Compose ───
     implementation(platform(libs.androidx.compose.bom))
-
     implementation(libs.androidx.activity.compose)
-
     implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.material3)
@@ -116,19 +108,31 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
 
+    // ─── Core ───
     implementation(libs.androidx.core.ktx)
 
+    // ─── Lifecycle ───
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
+    // ─── Navigation ───
     implementation(libs.androidx.navigation.compose)
 
+    // ─── Room ───
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
 
+    // ─── Moshi ───
+    implementation(libs.moshi.kotlin)
+
+    // ─── تپسل پلاس SDK (تبلیغات) ───
     implementation("ir.tapsell.plus:tapsell-plus-sdk-android:2.3.3")
 
+    // ─── Poolakey کافه‌بازار (پرداخت درون‌برنامه‌ای و VIP) ───
+    implementation("com.github.cafebazaar.Poolakey:poolakey:2.2.0")
+
+    // ─── تست‌ها ───
     testImplementation(libs.androidx.compose.ui.test.junit4)
     testImplementation(libs.androidx.core)
     testImplementation(libs.androidx.junit)
@@ -148,6 +152,7 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
+    // ─── KSP برای Room و Moshi ───
     ksp(libs.androidx.room.compiler)
     ksp(libs.moshi.kotlin.codegen)
 }
