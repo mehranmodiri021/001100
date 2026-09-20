@@ -1,4 +1,4 @@
-package com.example.ui.viewmodel
+package com.arenaclash.game.ui.viewmodel
 
 import android.app.Activity
 import androidx.activity.result.ActivityResultLauncher
@@ -6,21 +6,21 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.ads.AdState
-import com.example.ads.TapsellManager
-import com.example.billing.BazaarBillingManager
-import com.example.billing.BazaarConfig
-import com.example.billing.PurchaseResult
-import com.example.billing.VerifiedPurchase
-import com.example.data.local.entity.ChallengeItemEntity
-import com.example.data.local.entity.GameSettingsEntity
-import com.example.data.local.entity.LeaderboardEntryEntity
-import com.example.data.local.entity.MatchHistoryEntity
-import com.example.data.local.entity.RewardItemEntity
-import com.example.data.local.entity.UserProfileEntity
-import com.example.data.local.entity.VipStateEntity
-import com.example.data.repository.GameRepository
-import com.example.data.repository.UserRepository
+import com.arenaclash.game.ads.AdState
+import com.arenaclash.game.ads.TapsellManager
+import com.arenaclash.game.billing.BazaarBillingManager
+import com.arenaclash.game.billing.BazaarConfig
+import com.arenaclash.game.billing.PurchaseResult
+import com.arenaclash.game.billing.VerifiedPurchase
+import com.arenaclash.game.data.local.entity.ChallengeItemEntity
+import com.arenaclash.game.data.local.entity.GameSettingsEntity
+import com.arenaclash.game.data.local.entity.LeaderboardEntryEntity
+import com.arenaclash.game.data.local.entity.MatchHistoryEntity
+import com.arenaclash.game.data.local.entity.RewardItemEntity
+import com.arenaclash.game.data.local.entity.UserProfileEntity
+import com.arenaclash.game.data.local.entity.VipStateEntity
+import com.arenaclash.game.data.repository.GameRepository
+import com.arenaclash.game.data.repository.UserRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -37,8 +37,7 @@ sealed class UiEvent {
 class ArenaViewModel(
     private val userRepository: UserRepository,
     private val gameRepository: GameRepository,
-    val billingManager: BazaarBillingManager,
-    val tapsellManager: TapsellManager
+    val billingManager: BazaarBillingManager
 ) : ViewModel() {
 
     val userProfile: StateFlow<UserProfileEntity?> = userRepository.userProfile
@@ -62,7 +61,8 @@ class ArenaViewModel(
     val settings: StateFlow<GameSettingsEntity?> = gameRepository.settings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val adState: StateFlow<AdState> = tapsellManager.adState
+    // TapsellManager یک object است، پس مستقیم به adState دسترسی داریم
+    val adState: StateFlow<AdState> = TapsellManager.adState
 
     private val _uiEvents = MutableSharedFlow<UiEvent>()
     val uiEvents: SharedFlow<UiEvent> = _uiEvents.asSharedFlow()
@@ -176,7 +176,7 @@ class ArenaViewModel(
     }
 
     fun watchRewardedAd(activity: Activity) {
-        tapsellManager.requestAndShowRewardedVideo(
+        TapsellManager.requestAndShowRewardedVideo(
             activity = activity,
             rewardCoins = 150,
             onRewarded = { coins ->
@@ -197,7 +197,7 @@ class ArenaViewModel(
         viewModelScope.launch {
             _uiEvents.emit(UiEvent.ShowSnackbar("در حال آماده‌سازی ویدیوی فوری..."))
         }
-        tapsellManager.requestAndShowInterstitial(
+        TapsellManager.requestAndShowInterstitial(
             activity = activity,
             onClosed = {
                 viewModelScope.launch {
@@ -280,8 +280,7 @@ class ArenaViewModel(
 class ArenaViewModelFactory(
     private val userRepository: UserRepository,
     private val gameRepository: GameRepository,
-    private val billingManager: BazaarBillingManager,
-    private val tapsellManager: TapsellManager
+    private val billingManager: BazaarBillingManager
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -289,8 +288,7 @@ class ArenaViewModelFactory(
             return ArenaViewModel(
                 userRepository,
                 gameRepository,
-                billingManager,
-                tapsellManager
+                billingManager
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
