@@ -129,8 +129,7 @@ dependencies {
     // ─── تپسل پلاس SDK (تبلیغات) ───
     implementation("ir.tapsell.plus:tapsell-plus-sdk-android:2.3.3")
 
-    // ─── Poolakey کافه‌بازار (پرداخت درون‌برنامه‌ای و VIP) ───
-    implementation("com.github.cafebazaar.Poolakey:poolakey:2.2.0")
+    // ⚠️ Poolakey حذف شد چون از AIDL مستقیم استفاده می‌کنیم (BazaarBillingManager)
 
     // ─── تست‌ها ───
     testImplementation(libs.androidx.compose.ui.test.junit4)
